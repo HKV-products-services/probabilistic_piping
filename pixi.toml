@@ -30,16 +30,18 @@ docs = { depends_on = ["quarto-preview"] }
 
 [feature.common.dependencies]
 python = ">=3.11"
-pandas ="*"
-numpy ="*"
-ruff = ">=0.8.1"
-openturns = ">=1.23,<2"
-tqdm = "*"
-quarto = ">=1.5.57"
-quartodoc = ">=0.9.1"
-openpyxl = ">=3.1.5"
 ipykernel ="*"
 ipywidgets ="*"
+nbclient ="*"
+nbformat ="*"
+numpy ="*"
+openpyxl = ">=3.1.5"
+openturns = ">=1.23,<2"
+pandas ="*"
+quarto = ">=1.5.57"
+quartodoc = ">=0.9.1"
+ruff = ">=0.8.1"
+tqdm = "*"
 
 [feature.common.pypi-dependencies]
 probabilistic_piping = { path = "src", editable = true }
