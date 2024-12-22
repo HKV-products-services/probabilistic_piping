@@ -1,0 +1,31 @@
+project:
+  type: website
+  output-dir: docs
+
+website:
+  title: "Probabilistic piping"
+  navbar:
+    left:
+      - text: "Python API"
+        file: reference/index.qmd
+
+format:
+  html:
+    theme: cosmo
+    css: styles.css
+    toc: true
+
+quartodoc:
+  style: pkgdown
+  dir: reference
+  title: API Reference
+  package: probabilistic_piping
+  parser: numpy
+  dynamic: True
+  rewrite_all_pages: True
+  options:
+    include_inherited: true
+    include_empty: true
+    include_attributes: true
+    include_classes: true
+    include_functions: true
