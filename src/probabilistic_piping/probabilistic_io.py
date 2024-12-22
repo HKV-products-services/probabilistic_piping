@@ -283,7 +283,7 @@ class ProbResult:
         #  - residual <= 1.1 * limitStateTolerance
         # Dit hebben we omzeild door een try/except toe te voegen. Maar dan
         # dan moeten we hier alsnog checken of het resultaat geconvergeerd is
-        # naar het gewenste criterium. Criterium op dezelfde wijze als in 
+        # naar het gewenste criterium. Criterium op dezelfde wijze als in
         # openturns geimplementeerd:
         #  - const Scalar residual = result_.getOptimizationResult().getConstraintError();
         #  - const Scalar limitStateTolerance = nearestPointAlgorithm_.getMaximumConstraintError();
