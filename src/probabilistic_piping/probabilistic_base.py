@@ -3,10 +3,11 @@ from typing import Callable
 
 import numpy as np
 import openturns as ot
-import pydantic
 import tqdm.auto as tqdm
+from pydantic import BaseModel, ConfigDict
 from pydantic.dataclasses import dataclass
 
+from probabilistic_piping.piping_equations import PipingEquations
 from probabilistic_piping.piping_settings import PipingSettings
 from probabilistic_piping.probabilistic_io import ProbInput, ProbResult
 
@@ -95,23 +96,29 @@ class RelevantStochasts:
     )
 
 
-class ProbPipingBase(pydantic.BaseModel):
+class ProbPipingBase(BaseModel):
     """
     Base class for probabilistic piping calculations.
 
     Attributes
     ----------
+    model_config :ConfigDict
+        Configuration for the pydantic model.
     progress : bool
         Flag to indicate if progress should be shown.
     debug : bool
         Flag to indicate if debug information should be printed.
     rel_stochasts : RelevantStochasts
         Relevant stochastic variables for different types of analyses.
+    piping_eq : PipingEquations
+        Piping equations to use for the calculations.
     """
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     progress: bool = False
     debug: bool = False
     rel_stochasts: RelevantStochasts = field(default_factory=RelevantStochasts)
+    piping_eq: PipingEquations = field(default_factory=PipingEquations)
 
     def _prob_calculation(
         self,

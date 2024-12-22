@@ -3,7 +3,7 @@ import numpy as np
 from probabilistic_piping.piping_settings import PipingSettings
 
 
-class Piping:
+class PipingEquations:
     @staticmethod
     def stijghoogte(
         h_exit: float | np.ndarray, r_exit: float | np.ndarray, h: float | np.ndarray
@@ -76,8 +76,8 @@ class Piping:
             / settings.gamma_water
         )
 
-    @staticmethod
-    def phi_exit(settings: PipingSettings) -> float | np.ndarray:
+    @classmethod
+    def phi_exit(cls, settings: PipingSettings) -> float | np.ndarray:
         """
         Stijghoogte in de watervoerende laag bij het uittredepunt.
 
@@ -92,11 +92,11 @@ class Piping:
             Stijghoogte bij het uittredepunt.
         """
         if settings.methode_stijghoogte == "responsfactor":
-            phi_exit = Piping.stijghoogte_responsfactor(settings.h, settings)
+            phi_exit = cls.stijghoogte_responsfactor(settings.h, settings)
         elif settings.methode_stijghoogte == "responsfactor_phi_gem":
-            phi_exit = Piping.stijghoogte_responsfactor_phi_gem(settings.h, settings)
+            phi_exit = cls.stijghoogte_responsfactor_phi_gem(settings.h, settings)
         elif settings.methode_stijghoogte == "TRWD_4A":
-            phi_exit = Piping.stijghoogte_TRWD_4A(settings.h, settings)
+            phi_exit = cls.stijghoogte_TRWD_4A(settings.h, settings)
         else:
             raise ValueError(
                 f"{settings.methode_stijghoogte=}' kan niet toegepast worden in stationaire pipingberekeningen"
@@ -173,8 +173,8 @@ class Piping:
             result = result[0]
         return result
 
-    @staticmethod
-    def H_c(settings: PipingSettings) -> float | np.ndarray:
+    @classmethod
+    def H_c(cls, settings: PipingSettings) -> float | np.ndarray:
         """
         Kritieke verval.
 
@@ -188,13 +188,14 @@ class Piping:
         float or np.ndarray
             Kritieke verval.
         """
-        Fres = Piping.F_res(settings)
-        Fscale = Piping.F_scale(settings)
-        Fgeo = Piping.F_geo(settings)
+        Fres = cls.F_res(settings)
+        Fscale = cls.F_scale(settings)
+        Fgeo = cls.F_geo(settings)
         return settings.krit_verval_factor * settings.L * Fres * Fscale * Fgeo
 
-    @staticmethod
+    @classmethod
     def _Z_p(
+        cls,
         m_p: float | np.ndarray,
         H_c: float | np.ndarray,
         h: float | np.ndarray,
@@ -225,10 +226,10 @@ class Piping:
         float or np.ndarray
             Grenstoestandsfunctie sellmeijer.
         """
-        return m_p * H_c - Piping.verval(h, h_exit, r_c, D_cover)
+        return m_p * H_c - cls.verval(h, h_exit, r_c, D_cover)
 
-    @staticmethod
-    def Z_p(settings: PipingSettings) -> float | np.ndarray:
+    @classmethod
+    def Z_p(cls, settings: PipingSettings) -> float | np.ndarray:
         """
         Grenstoestandsfunctie sellmeijer.
 
@@ -242,8 +243,8 @@ class Piping:
         float or np.ndarray
             Grenstoestandsfunctie sellmeijer.
         """
-        Hc = Piping.H_c(settings)
-        result = Piping._Z_p(
+        Hc = cls.H_c(settings)
+        result = cls._Z_p(
             settings.m_p,
             Hc,
             settings.h,
@@ -253,8 +254,9 @@ class Piping:
         )
         return result
 
-    @staticmethod
+    @classmethod
     def _sf_p(
+        cls,
         m_p: float | np.ndarray,
         H_c: float | np.ndarray,
         h: float | np.ndarray,
@@ -285,7 +287,7 @@ class Piping:
         float or np.ndarray
             Veiligheidsfactor sellmeijer.
         """
-        return (H_c * m_p) / Piping.verval(h, h_exit, r_c, D_cover)
+        return (H_c * m_p) / cls.verval(h, h_exit, r_c, D_cover)
 
     @staticmethod
     def _sf_u(
@@ -371,8 +373,8 @@ class Piping:
         """
         return m_u * delta_phi_cu - (phi_exit - h_exit)
 
-    @staticmethod
-    def Z_u(settings: PipingSettings) -> float | np.ndarray:
+    @classmethod
+    def Z_u(cls, settings: PipingSettings) -> float | np.ndarray:
         """
         Grenstoestandsfunctie uplift.
 
@@ -386,10 +388,10 @@ class Piping:
         float or np.ndarray
             Grenstoestandsfunctie uplift.
         """
-        result = Piping._Z_u(
+        result = cls._Z_u(
             settings.m_u,
-            Piping.delta_phi_cu(settings),
-            Piping.phi_exit(settings),
+            cls.delta_phi_cu(settings),
+            cls.phi_exit(settings),
             settings.h_exit,
         )
         return result
@@ -422,8 +424,8 @@ class Piping:
         """
         return i_ch - (phi_exit - h_exit) / D_cover
 
-    @staticmethod
-    def Z_h(settings: PipingSettings) -> float | np.ndarray:
+    @classmethod
+    def Z_h(cls, settings: PipingSettings) -> float | np.ndarray:
         """
         Grenstoestandsfunctie heave.
 
@@ -437,8 +439,8 @@ class Piping:
         float or np.ndarray
             Grenstoestandsfunctie heave.
         """
-        result = Piping._Z_h(
-            settings.i_ch, Piping.phi_exit(settings), settings.h_exit, settings.D_cover
+        result = cls._Z_h(
+            settings.i_ch, cls.phi_exit(settings), settings.h_exit, settings.D_cover
         )
         return result
 
@@ -468,8 +470,8 @@ class Piping:
             result = result[0]
         return result
 
-    @staticmethod
-    def Z_all(settings: PipingSettings) -> float | np.ndarray:
+    @classmethod
+    def Z_all(cls, settings: PipingSettings) -> float | np.ndarray:
         """
         Overkoepelende grenstoestandsfunctie piping voor alle deelfaalmechanismen.
 
@@ -483,13 +485,11 @@ class Piping:
         float or np.ndarray
             Overkoepelende grenstoestandsfunctie.
         """
-        return Piping._Z_all(
-            Piping.Z_u(settings), Piping.Z_h(settings), Piping.Z_p(settings)
-        )
+        return cls._Z_all(cls.Z_u(settings), cls.Z_h(settings), cls.Z_p(settings))
 
-    @staticmethod
+    @classmethod
     def stijghoogte_responsfactor(
-        waterstand: float | np.ndarray, settings: PipingSettings
+        cls, waterstand: float | np.ndarray, settings: PipingSettings
     ) -> float | np.ndarray:
         """
         Stijghoogte in de watervoerende laag bij het uittredepunt.
@@ -506,4 +506,4 @@ class Piping:
         float or np.ndarray
             Stijghoogte bij het uittredepunt.
         """
-        return Piping.stijghoogte(settings.h_exit, settings.r_exit, waterstand)
+        return cls.stijghoogte(settings.h_exit, settings.r_exit, waterstand)

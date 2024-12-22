@@ -5,9 +5,9 @@ import numpy as np
 import openturns as ot
 import pandas as pd
 import tqdm.auto as tqdm
-from pydantic import validate_call
+from pydantic import validate_call, ConfigDict
 
-from probabilistic_piping.piping_equations import Piping
+from probabilistic_piping.piping_equations import PipingEquations
 from probabilistic_piping.piping_settings import PipingSettings
 from probabilistic_piping.probabilistic_base import ProbPipingBase, RelevantStochasts
 from probabilistic_piping.probabilistic_io import ProbInput, ProbResult, ProbResults
@@ -19,17 +19,23 @@ class ProbPipingFixedWaterlevelBase(ProbPipingBase):
 
     Attributes
     ----------
+    model_config : ConfigDict
+        Configuration for the pydantic model.
     progress : bool
         Flag to indicate if progress should be shown.
     debug : bool
         Flag to indicate if debug information should be printed.
     rel_stochasts : RelevantStochasts
         Relevant stochastic variables for different types of analyses.
+    piping_eq : PipingEquations
+        Piping equations to use for the calculations.
     """
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     progress: bool = False
     debug: bool = False
     rel_stochasts: RelevantStochasts = field(default_factory=RelevantStochasts)
+    piping_eq: PipingEquations = field(default_factory=PipingEquations)
 
     @validate_call(config=dict(arbitrary_types_allowed=True))
     def fixed_waterlevel_semiprob(
@@ -70,12 +76,16 @@ class ProbPipingFixedWaterlevelBase(ProbPipingBase):
         settings.set_params_fromdict(settings_dict)
 
         # bereken veiligheidsfactoren voor de deelmechanismes
-        Hc = Piping.H_c(settings)
-        phi_exit = Piping.phi_exit(settings)
-        delta_phi_cu = Piping.delta_phi_cu(settings)
-        sf_h = Piping._sf_h(settings.i_ch, phi_exit, settings.h_exit, settings.D_cover)
-        sf_u = Piping._sf_u(settings.m_u, delta_phi_cu, phi_exit, settings.h_exit)
-        sf_p = Piping._sf_p(
+        Hc = self.piping_eq.H_c(settings)
+        phi_exit = self.piping_eq.phi_exit(settings)
+        delta_phi_cu = self.piping_eq.delta_phi_cu(settings)
+        sf_h = self.piping_eq._sf_h(
+            settings.i_ch, phi_exit, settings.h_exit, settings.D_cover
+        )
+        sf_u = self.piping_eq._sf_u(
+            settings.m_u, delta_phi_cu, phi_exit, settings.h_exit
+        )
+        sf_p = self.piping_eq._sf_p(
             settings.m_p,
             Hc,
             settings.h,
@@ -136,17 +146,23 @@ class ProbPipingFixedWaterlevelSimple(ProbPipingFixedWaterlevelBase):
 
     Attributes
     ----------
+    model_config : ConfigDict
+        Configuration for the pydantic model.
     progress : bool
         Flag to indicate if progress should be shown.
     debug : bool
         Flag to indicate if debug information should be printed.
     rel_stochasts : RelevantStochasts
         Relevant stochastic variables for different types of analyses.
+    piping_eq : PipingEquations
+        Piping equations to use for the calculations.
     """
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     progress: bool = False
     debug: bool = False
     rel_stochasts: RelevantStochasts = field(default_factory=RelevantStochasts)
+    piping_eq: PipingEquations = field(default_factory=PipingEquations)
 
     @validate_call(config=dict(arbitrary_types_allowed=True))
     def fixed_waterlevel_fragilitycurve(
@@ -248,15 +264,27 @@ class ProbPipingFixedWaterlevelSimple(ProbPipingFixedWaterlevelBase):
         settings.set_params_fromdict(settings_dict)
 
         _, result_u = self._prob_calculation(
-            h, "uplift", Piping.Z_u, settings, prob_input, copula=copula, leave=leave
+            h,
+            "uplift",
+            self.piping_eq.Z_u,
+            settings,
+            prob_input,
+            copula=copula,
+            leave=leave,
         )
         _, result_h = self._prob_calculation(
-            h, "heave", Piping.Z_h, settings, prob_input, copula=copula, leave=leave
+            h,
+            "heave",
+            self.piping_eq.Z_h,
+            settings,
+            prob_input,
+            copula=copula,
+            leave=leave,
         )
         _, result_p = self._prob_calculation(
             h,
             "sellmeijer",
-            Piping.Z_p,
+            self.piping_eq.Z_p,
             settings,
             prob_input,
             copula=copula,
@@ -277,17 +305,23 @@ class ProbPipingFixedWaterlevel(ProbPipingFixedWaterlevelBase):
 
     Attributes
     ----------
+    model_config : ConfigDict
+        Configuration for the pydantic model.
     progress : bool
         Flag to indicate if progress should be shown.
     debug : bool
         Flag to indicate if debug information should be printed.
     rel_stochasts : RelevantStochasts
         Relevant stochastic variables for different types of analyses.
+    piping_eq : PipingEquations
+        Piping equations to use for the calculations.
     """
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     progress: bool = False
     debug: bool = False
     rel_stochasts: RelevantStochasts = field(default_factory=RelevantStochasts)
+    piping_eq: PipingEquations = field(default_factory=PipingEquations)
 
     @validate_call(config=dict(arbitrary_types_allowed=True))
     def fixed_waterlevel_fragilitycurve(
@@ -386,13 +420,13 @@ class ProbPipingFixedWaterlevel(ProbPipingFixedWaterlevelBase):
 
         # z-functie
         if z_type == "sellmeijer":
-            z_func = Piping.Z_p
+            z_func = self.piping_eq.Z_p
         elif z_type == "heave":
-            z_func = Piping.Z_h
+            z_func = self.piping_eq.Z_h
         elif z_type == "uplift":
-            z_func = Piping.Z_u
+            z_func = self.piping_eq.Z_u
         elif z_type == "combi":
-            z_func = Piping.Z_all
+            z_func = self.piping_eq.Z_all
         else:
             raise ValueError(
                 f"Argument z_type is niet 'sellmeijer', 'heave', 'uplift' of 'combi' ('{z_type}')"
