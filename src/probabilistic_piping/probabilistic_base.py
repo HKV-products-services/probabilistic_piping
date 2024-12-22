@@ -1,3 +1,4 @@
+from dataclasses import field
 from typing import Callable
 
 import numpy as np
@@ -7,66 +8,99 @@ import tqdm.auto as tqdm
 
 from probabilistic_piping.piping_settings import PipingSettings
 from probabilistic_piping.probabilistic_io import ProbInput, ProbResult
+from pydantic.dataclasses import dataclass
+
+
+@dataclass
+class RelevantStochasts:
+    """
+    Dataclass to hold relevant stochastic variables for different types of analyses.
+
+    Attributes
+    ----------
+    algemeen : list of str
+        General stochastic variables.
+    uplift : list of str
+        Stochastic variables relevant for uplift analysis.
+    heave : list of str
+        Stochastic variables relevant for heave analysis.
+    sellmeijer : list of str
+        Stochastic variables relevant for Sellmeijer analysis.
+    combi : list of str
+        Combined stochastic variables for combined analyses.
+    """
+
+    algemeen: list[str] = field(default_factory=lambda: [
+        "d_70m",
+        "g",
+        "gamma_water",
+        "r_c",
+        "v",
+        "gamma_sp",
+    ])
+    uplift: list[str] = field(default_factory=lambda: [
+        "D_cover",
+        "gamma_sat",
+        "h_exit",
+        "m_u",
+        "r_exit",
+        "phi_gem",
+        "h_gem",
+    ])
+    heave: list[str] = field(default_factory=lambda: [
+        "D_cover",
+        "h_exit",
+        "i_ch",
+        "r_exit",
+        "phi_gem",
+        "h_gem",
+    ])
+    sellmeijer: list[str] = field(default_factory=lambda: [
+        "D",
+        "D_cover",
+        "d_70",
+        "eta",
+        "h_exit",
+        "k",
+        "L",
+        "m_p",
+        "theta",
+    ])
+    combi: list[str] = field(default_factory=lambda: [
+        "D_cover",
+        "gamma_sat",
+        "h_exit",
+        "m_u",
+        "r_exit",
+        "phi_gem",
+        "h_gem",
+        "i_ch",
+        "D",
+        "d_70",
+        "eta",
+        "k",
+        "L",
+        "m_p",
+        "theta",
+    ])
 
 
 class ProbPipingBase(pydantic.BaseModel):
+    """
+    Base class for probabilistic piping calculations.
+
+    Attributes
+    ----------
+    progress : bool
+        Flag to indicate if progress should be shown.
+    debug : bool
+        Flag to indicate if debug information should be printed.
+    rel_stochasts : RelevantStochasts
+        Relevant stochastic variables for different types of analyses.
+    """
+    progress: bool = False
     debug: bool = False
-    fc_progress: bool = False
-    rel_stochasten: dict[str, list[str]] = {
-        "algemeen": [
-            "d_70m",
-            "g",
-            "gamma_water",
-            "r_c",
-            "v",
-            "gamma_sp",
-        ],
-        "uplift": [
-            "D_cover",
-            "gamma_sat",
-            "h_exit",
-            "m_u",
-            "r_exit",
-            "phi_gem",
-            "h_gem",
-        ],
-        "heave": [
-            "D_cover",
-            "h_exit",
-            "i_ch",
-            "r_exit",
-            "phi_gem",
-            "h_gem",
-        ],
-        "sellmeijer": [
-            "D",
-            "D_cover",
-            "d_70",
-            "eta",
-            "h_exit",
-            "k",
-            "L",
-            "m_p",
-            "theta",
-        ],
-        "combi": [
-            "D_cover",
-            "gamma_sat",
-            "h_exit",
-            "m_u",
-            "r_exit",
-            "phi_gem",
-            "h_gem",
-            "i_ch",
-            "D",
-            "d_70",
-            "eta",
-            "k",
-            "L",
-            "m_p",
-            "theta",
-        ],
-    }
+    rel_stochasts: RelevantStochasts = field(default_factory=RelevantStochasts)
 
     def _prob_calculation(
         self,
@@ -106,9 +140,9 @@ class ProbPipingBase(pydantic.BaseModel):
         # Bepaal de relevante stochasten subset
         subset_stochasten = {}
         for sname, stochast in prob_input.stochasten.items():
-            if sname in self.rel_stochasten["algemeen"]:
+            if sname in self.rel_stochasts.algemeen:
                 subset_stochasten[sname] = stochast
-            elif sname in self.rel_stochasten[z_type]:
+            elif sname in getattr(self.rel_stochasts, z_type):
                 subset_stochasten[sname] = stochast
 
         description = list(subset_stochasten.keys())
@@ -167,7 +201,7 @@ class ProbPipingBase(pydantic.BaseModel):
 
             with tqdm.tqdm(
                 desc=rekentechniek,
-                disable=(not self.fc_progress),
+                disable=(not self.progress),
                 leave=leave,
                 total=max_iter,
             ) as pbar:
@@ -203,7 +237,7 @@ class ProbPipingBase(pydantic.BaseModel):
 
             with tqdm.tqdm(
                 desc=rekentechniek,
-                disable=(not self.fc_progress),
+                disable=(not self.progress),
                 leave=leave,
                 total=int(algo.getMaximumOuterSampling() * algo.getBlockSize()),
             ) as pbar:
@@ -222,7 +256,7 @@ class ProbPipingBase(pydantic.BaseModel):
             self._set_calc_options(algo, prob_input.calc_options, self.debug)
             with tqdm.tqdm(
                 desc=rekentechniek,
-                disable=(not self.fc_progress),
+                disable=(not self.progress),
                 leave=leave,
                 total=int(algo.getMaximumOuterSampling() * algo.getBlockSize()),
             ) as pbar:

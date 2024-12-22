@@ -1,4 +1,5 @@
 import statistics as stat
+from dataclasses import field
 
 import numpy as np
 import openturns as ot
@@ -8,14 +9,26 @@ from pydantic import validate_call
 
 from probabilistic_piping.piping_equations import Piping
 from probabilistic_piping.piping_settings import PipingSettings
-from probabilistic_piping.probabilistic_base import ProbPipingBase
+from probabilistic_piping.probabilistic_base import ProbPipingBase, RelevantStochasts
 from probabilistic_piping.probabilistic_io import ProbInput, ProbResult, ProbResults
 
 
 class ProbPipingFixedWaterlevelBase(ProbPipingBase):
     """
     Base class for probabilistic piping calculations with a fixed water level.
+
+    Attributes
+    ----------
+    progress : bool
+        Flag to indicate if progress should be shown.
+    debug : bool
+        Flag to indicate if debug information should be printed.
+    rel_stochasts : RelevantStochasts
+        Relevant stochastic variables for different types of analyses.
     """
+    progress: bool = False
+    debug: bool = False
+    rel_stochasts: RelevantStochasts = field(default_factory=RelevantStochasts)
 
     @validate_call(config=dict(arbitrary_types_allowed=True))
     def fixed_waterlevel_semiprob(
@@ -119,7 +132,19 @@ class ProbPipingFixedWaterlevelBase(ProbPipingBase):
 class ProbPipingFixedWaterlevelSimple(ProbPipingFixedWaterlevelBase):
     """
     Class for simple probabilistic piping calculations with a fixed water level.
+
+    Attributes
+    ----------
+    progress : bool
+        Flag to indicate if progress should be shown.
+    debug : bool
+        Flag to indicate if debug information should be printed.
+    rel_stochasts : RelevantStochasts
+        Relevant stochastic variables for different types of analyses.
     """
+    progress: bool = False
+    debug: bool = False
+    rel_stochasts: RelevantStochasts = field(default_factory=RelevantStochasts)
 
     @validate_call(config=dict(arbitrary_types_allowed=True))
     def fixed_waterlevel_fragilitycurve(
@@ -161,7 +186,7 @@ class ProbPipingFixedWaterlevelSimple(ProbPipingFixedWaterlevelBase):
             settings.set_params_fromdict({**prob_input.params})
 
         # loop over waterstanden en bepaal faalkansen
-        for h in tqdm.tqdm(hlist, disable=(not self.fc_progress)):
+        for h in tqdm.tqdm(hlist, disable=(not self.progress)):
             _, ru, rh, rp, rc = self.fixed_waterlevel_failureprobability(
                 h=h,
                 settings=settings,
@@ -247,7 +272,19 @@ class ProbPipingFixedWaterlevelSimple(ProbPipingFixedWaterlevelBase):
 class ProbPipingFixedWaterlevel(ProbPipingFixedWaterlevelBase):
     """
     Class for probabilistic piping calculations with a fixed water level.
+
+    Attributes
+    ----------
+    progress : bool
+        Flag to indicate if progress should be shown.
+    debug : bool
+        Flag to indicate if debug information should be printed.
+    rel_stochasts : RelevantStochasts
+        Relevant stochastic variables for different types of analyses.
     """
+    progress: bool = False
+    debug: bool = False
+    rel_stochasts: RelevantStochasts = field(default_factory=RelevantStochasts)
 
     @validate_call(config=dict(arbitrary_types_allowed=True))
     def fixed_waterlevel_fragilitycurve(
@@ -288,7 +325,7 @@ class ProbPipingFixedWaterlevel(ProbPipingFixedWaterlevelBase):
 
         # loop over waterstanden en bepaal faalkansen
         results = ProbResults()
-        for h in tqdm.tqdm(hlist, disable=(not self.fc_progress)):
+        for h in tqdm.tqdm(hlist, disable=(not self.progress)):
             _, result = self.fixed_waterlevel_failureprobability(
                 h=h, settings=settings, z_type=z_type, copula=copula, leave=False
             )
