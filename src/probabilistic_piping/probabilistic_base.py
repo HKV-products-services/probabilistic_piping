@@ -5,10 +5,10 @@ import numpy as np
 import openturns as ot
 import pydantic
 import tqdm.auto as tqdm
+from pydantic.dataclasses import dataclass
 
 from probabilistic_piping.piping_settings import PipingSettings
 from probabilistic_piping.probabilistic_io import ProbInput, ProbResult
-from pydantic.dataclasses import dataclass
 
 
 @dataclass
@@ -30,59 +30,69 @@ class RelevantStochasts:
         Combined stochastic variables for combined analyses.
     """
 
-    algemeen: list[str] = field(default_factory=lambda: [
-        "d_70m",
-        "g",
-        "gamma_water",
-        "r_c",
-        "v",
-        "gamma_sp",
-    ])
-    uplift: list[str] = field(default_factory=lambda: [
-        "D_cover",
-        "gamma_sat",
-        "h_exit",
-        "m_u",
-        "r_exit",
-        "phi_gem",
-        "h_gem",
-    ])
-    heave: list[str] = field(default_factory=lambda: [
-        "D_cover",
-        "h_exit",
-        "i_ch",
-        "r_exit",
-        "phi_gem",
-        "h_gem",
-    ])
-    sellmeijer: list[str] = field(default_factory=lambda: [
-        "D",
-        "D_cover",
-        "d_70",
-        "eta",
-        "h_exit",
-        "k",
-        "L",
-        "m_p",
-        "theta",
-    ])
-    combi: list[str] = field(default_factory=lambda: [
-        "D_cover",
-        "gamma_sat",
-        "h_exit",
-        "m_u",
-        "r_exit",
-        "phi_gem",
-        "h_gem",
-        "i_ch",
-        "D",
-        "d_70",
-        "eta",
-        "k",
-        "L",
-        "m_p",
-        "theta",
-    ])
+    algemeen: list[str] = field(
+        default_factory=lambda: [
+            "d_70m",
+            "g",
+            "gamma_water",
+            "r_c",
+            "v",
+            "gamma_sp",
+        ]
+    )
+    uplift: list[str] = field(
+        default_factory=lambda: [
+            "D_cover",
+            "gamma_sat",
+            "h_exit",
+            "m_u",
+            "r_exit",
+            "phi_gem",
+            "h_gem",
+        ]
+    )
+    heave: list[str] = field(
+        default_factory=lambda: [
+            "D_cover",
+            "h_exit",
+            "i_ch",
+            "r_exit",
+            "phi_gem",
+            "h_gem",
+        ]
+    )
+    sellmeijer: list[str] = field(
+        default_factory=lambda: [
+            "D",
+            "D_cover",
+            "d_70",
+            "eta",
+            "h_exit",
+            "k",
+            "L",
+            "m_p",
+            "theta",
+        ]
+    )
+    combi: list[str] = field(
+        default_factory=lambda: [
+            "D_cover",
+            "gamma_sat",
+            "h_exit",
+            "m_u",
+            "r_exit",
+            "phi_gem",
+            "h_gem",
+            "i_ch",
+            "D",
+            "d_70",
+            "eta",
+            "k",
+            "L",
+            "m_p",
+            "theta",
+        ]
+    )
 
 
 class ProbPipingBase(pydantic.BaseModel):
@@ -98,6 +108,7 @@ class ProbPipingBase(pydantic.BaseModel):
     rel_stochasts : RelevantStochasts
         Relevant stochastic variables for different types of analyses.
     """
+
     progress: bool = False
     debug: bool = False
     rel_stochasts: RelevantStochasts = field(default_factory=RelevantStochasts)

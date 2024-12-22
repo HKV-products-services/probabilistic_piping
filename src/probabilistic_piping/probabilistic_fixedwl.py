@@ -26,6 +26,7 @@ class ProbPipingFixedWaterlevelBase(ProbPipingBase):
     rel_stochasts : RelevantStochasts
         Relevant stochastic variables for different types of analyses.
     """
+
     progress: bool = False
     debug: bool = False
     rel_stochasts: RelevantStochasts = field(default_factory=RelevantStochasts)
@@ -142,6 +143,7 @@ class ProbPipingFixedWaterlevelSimple(ProbPipingFixedWaterlevelBase):
     rel_stochasts : RelevantStochasts
         Relevant stochastic variables for different types of analyses.
     """
+
     progress: bool = False
     debug: bool = False
     rel_stochasts: RelevantStochasts = field(default_factory=RelevantStochasts)
@@ -282,6 +284,7 @@ class ProbPipingFixedWaterlevel(ProbPipingFixedWaterlevelBase):
     rel_stochasts : RelevantStochasts
         Relevant stochastic variables for different types of analyses.
     """
+
     progress: bool = False
     debug: bool = False
     rel_stochasts: RelevantStochasts = field(default_factory=RelevantStochasts)
