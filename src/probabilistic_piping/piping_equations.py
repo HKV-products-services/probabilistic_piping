@@ -3,7 +3,7 @@ import numpy as np
 from probabilistic_piping.piping_settings import PipingSettings
 
 
-class Piping(object):
+class Piping:
     @staticmethod
     def stijghoogte(
         h_exit: float | np.ndarray, r_exit: float | np.ndarray, h: float | np.ndarray
