@@ -206,6 +206,7 @@ class ProbPipingFixedWaterlevelSimple(ProbPipingFixedWaterlevelBase):
         # loop over waterstanden en bepaal faalkansen
         for h in tqdm.tqdm(hlist, disable=(not self.progress)):
             _, ru, rh, rp, rc = self.fixed_waterlevel_failureprobability(
+                prob_input=prob_input,
                 h=h,
                 settings=settings,
                 copula=copula,
@@ -364,7 +365,12 @@ class ProbPipingFixedWaterlevel(ProbPipingFixedWaterlevelBase):
         results = ProbResults()
         for h in tqdm.tqdm(hlist, disable=(not self.progress)):
             _, result = self.fixed_waterlevel_failureprobability(
-                h=h, settings=settings, z_type=z_type, copula=copula, leave=False
+                prob_input=prob_input,
+                h=h,
+                settings=settings,
+                z_type=z_type,
+                copula=copula,
+                leave=False,
             )
             results.results.append(result)
 
