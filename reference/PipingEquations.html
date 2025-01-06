@@ -156,6 +156,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#probabilistic_piping.PipingEquations.Z_u" id="toc-probabilistic_piping.PipingEquations.Z_u" class="nav-link" data-scroll-target="#probabilistic_piping.PipingEquations.Z_u">Z_u</a></li>
   <li><a href="#probabilistic_piping.PipingEquations.delta_phi_cu" id="toc-probabilistic_piping.PipingEquations.delta_phi_cu" class="nav-link" data-scroll-target="#probabilistic_piping.PipingEquations.delta_phi_cu">delta_phi_cu</a></li>
   <li><a href="#probabilistic_piping.PipingEquations.phi_exit" id="toc-probabilistic_piping.PipingEquations.phi_exit" class="nav-link" data-scroll-target="#probabilistic_piping.PipingEquations.phi_exit">phi_exit</a></li>
+  <li><a href="#probabilistic_piping.PipingEquations.sf_h" id="toc-probabilistic_piping.PipingEquations.sf_h" class="nav-link" data-scroll-target="#probabilistic_piping.PipingEquations.sf_h">sf_h</a></li>
+  <li><a href="#probabilistic_piping.PipingEquations.sf_p" id="toc-probabilistic_piping.PipingEquations.sf_p" class="nav-link" data-scroll-target="#probabilistic_piping.PipingEquations.sf_p">sf_p</a></li>
+  <li><a href="#probabilistic_piping.PipingEquations.sf_u" id="toc-probabilistic_piping.PipingEquations.sf_u" class="nav-link" data-scroll-target="#probabilistic_piping.PipingEquations.sf_u">sf_u</a></li>
   <li><a href="#probabilistic_piping.PipingEquations.stijghoogte" id="toc-probabilistic_piping.PipingEquations.stijghoogte" class="nav-link" data-scroll-target="#probabilistic_piping.PipingEquations.stijghoogte">stijghoogte</a></li>
   <li><a href="#probabilistic_piping.PipingEquations.stijghoogte_responsfactor" id="toc-probabilistic_piping.PipingEquations.stijghoogte_responsfactor" class="nav-link" data-scroll-target="#probabilistic_piping.PipingEquations.stijghoogte_responsfactor">stijghoogte_responsfactor</a></li>
   <li><a href="#probabilistic_piping.PipingEquations.verval" id="toc-probabilistic_piping.PipingEquations.verval" class="nav-link" data-scroll-target="#probabilistic_piping.PipingEquations.verval">verval</a></li>
@@ -225,14 +228,26 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>Stijghoogte in de watervoerende laag bij het uittredepunt.</td>
 </tr>
 <tr class="odd">
+<td><a href="#probabilistic_piping.PipingEquations.sf_h">sf_h</a></td>
+<td>Veiligheidsfactor heave.</td>
+</tr>
+<tr class="even">
+<td><a href="#probabilistic_piping.PipingEquations.sf_p">sf_p</a></td>
+<td>Veiligheidsfactor sellmeijer.</td>
+</tr>
+<tr class="odd">
+<td><a href="#probabilistic_piping.PipingEquations.sf_u">sf_u</a></td>
+<td>Veiligheidsfactor uplift.</td>
+</tr>
+<tr class="even">
 <td><a href="#probabilistic_piping.PipingEquations.stijghoogte">stijghoogte</a></td>
 <td>Generieke stijghoogte berekening.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><a href="#probabilistic_piping.PipingEquations.stijghoogte_responsfactor">stijghoogte_responsfactor</a></td>
 <td>Stijghoogte in de watervoerende laag bij het uittredepunt.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><a href="#probabilistic_piping.PipingEquations.verval">verval</a></td>
 <td>Berekening van het verval.</td>
 </tr>
@@ -748,12 +763,231 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </section>
 </section>
-<section id="probabilistic_piping.PipingEquations.stijghoogte" class="level3">
-<h3 class="anchored" data-anchor-id="probabilistic_piping.PipingEquations.stijghoogte">stijghoogte</h3>
-<div class="sourceCode" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>PipingEquations.stijghoogte(h_exit, r_exit, h)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>Generieke stijghoogte berekening.</p>
+<section id="probabilistic_piping.PipingEquations.sf_h" class="level3">
+<h3 class="anchored" data-anchor-id="probabilistic_piping.PipingEquations.sf_h">sf_h</h3>
+<div class="sourceCode" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>PipingEquations.sf_h(i_ch, phi_exit, h_exit, D_cover)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Veiligheidsfactor heave.</p>
 <section id="parameters-10" class="level4 doc-section doc-section-parameters">
 <h4 class="doc-section doc-section-parameters anchored" data-anchor-id="parameters-10">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 12%">
+<col style="width: 26%">
+<col style="width: 45%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>i_ch</td>
+<td>float or np.ndarray</td>
+<td>Kritieke gradient.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td>phi_exit</td>
+<td>float or np.ndarray</td>
+<td>Stijghoogte bij het uittredepunt.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="odd">
+<td>h_exit</td>
+<td>float or np.ndarray</td>
+<td>Kwelslootpeil bij uitgang [m+NAP].</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td>D_cover</td>
+<td>float or np.ndarray</td>
+<td>Dikte deklaag [m].</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-10" class="level4 doc-section doc-section-returns">
+<h4 class="doc-section doc-section-returns anchored" data-anchor-id="returns-10">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td></td>
+<td>float or np.ndarray</td>
+<td>Veiligheidsfactor heave.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="probabilistic_piping.PipingEquations.sf_p" class="level3">
+<h3 class="anchored" data-anchor-id="probabilistic_piping.PipingEquations.sf_p">sf_p</h3>
+<div class="sourceCode" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>PipingEquations.sf_p(m_p, H_c, h, h_exit, r_c, D_cover)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Veiligheidsfactor sellmeijer.</p>
+<section id="parameters-11" class="level4 doc-section doc-section-parameters">
+<h4 class="doc-section doc-section-parameters anchored" data-anchor-id="parameters-11">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 11%">
+<col style="width: 26%">
+<col style="width: 46%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>m_p</td>
+<td>float or np.ndarray</td>
+<td>Parameter m_p.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td>H_c</td>
+<td>float or np.ndarray</td>
+<td>Kritieke verval.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="odd">
+<td>h</td>
+<td>float or np.ndarray</td>
+<td>Buitenwaterstand [m+NAP].</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td>h_exit</td>
+<td>float or np.ndarray</td>
+<td>Kwelslootpeil bij uitgang [m+NAP].</td>
+<td><em>required</em></td>
+</tr>
+<tr class="odd">
+<td>r_c</td>
+<td>float or np.ndarray</td>
+<td>Reductiefactor [-].</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td>D_cover</td>
+<td>float or np.ndarray</td>
+<td>Dikte deklaag [m].</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-11" class="level4 doc-section doc-section-returns">
+<h4 class="doc-section doc-section-returns anchored" data-anchor-id="returns-11">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td></td>
+<td>float or np.ndarray</td>
+<td>Veiligheidsfactor sellmeijer.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="probabilistic_piping.PipingEquations.sf_u" class="level3">
+<h3 class="anchored" data-anchor-id="probabilistic_piping.PipingEquations.sf_u">sf_u</h3>
+<div class="sourceCode" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>PipingEquations.sf_u(m_u, delta_phi_cu, phi_exit, h_exit)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Veiligheidsfactor uplift.</p>
+<section id="parameters-12" class="level4 doc-section doc-section-parameters">
+<h4 class="doc-section doc-section-parameters anchored" data-anchor-id="parameters-12">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 16%">
+<col style="width: 25%">
+<col style="width: 43%">
+<col style="width: 14%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>m_u</td>
+<td>float or np.ndarray</td>
+<td>Parameter m_u.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td>delta_phi_cu</td>
+<td>float or np.ndarray</td>
+<td>Kritieke stijghoogteverschil.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="odd">
+<td>phi_exit</td>
+<td>float or np.ndarray</td>
+<td>Stijghoogte bij het uittredepunt.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td>h_exit</td>
+<td>float or np.ndarray</td>
+<td>Kwelslootpeil bij uitgang [m+NAP].</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-12" class="level4 doc-section doc-section-returns">
+<h4 class="doc-section doc-section-returns anchored" data-anchor-id="returns-12">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td></td>
+<td>float or np.ndarray</td>
+<td>Veiligheidsfactor uplift.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="probabilistic_piping.PipingEquations.stijghoogte" class="level3">
+<h3 class="anchored" data-anchor-id="probabilistic_piping.PipingEquations.stijghoogte">stijghoogte</h3>
+<div class="sourceCode" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>PipingEquations.stijghoogte(h_exit, r_exit, h)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Generieke stijghoogte berekening.</p>
+<section id="parameters-13" class="level4 doc-section doc-section-parameters">
+<h4 class="doc-section doc-section-parameters anchored" data-anchor-id="parameters-13">Parameters</h4>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 10%">
@@ -791,8 +1025,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tbody>
 </table>
 </section>
-<section id="returns-10" class="level4 doc-section doc-section-returns">
-<h4 class="doc-section doc-section-returns anchored" data-anchor-id="returns-10">Returns</h4>
+<section id="returns-13" class="level4 doc-section doc-section-returns">
+<h4 class="doc-section doc-section-returns anchored" data-anchor-id="returns-13">Returns</h4>
 <table class="caption-top table">
 <thead>
 <tr class="header">
@@ -813,10 +1047,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="probabilistic_piping.PipingEquations.stijghoogte_responsfactor" class="level3">
 <h3 class="anchored" data-anchor-id="probabilistic_piping.PipingEquations.stijghoogte_responsfactor">stijghoogte_responsfactor</h3>
-<div class="sourceCode" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>PipingEquations.stijghoogte_responsfactor(waterstand, settings)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>PipingEquations.stijghoogte_responsfactor(waterstand, settings)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Stijghoogte in de watervoerende laag bij het uittredepunt.</p>
-<section id="parameters-11" class="level4 doc-section doc-section-parameters">
-<h4 class="doc-section doc-section-parameters anchored" data-anchor-id="parameters-11">Parameters</h4>
+<section id="parameters-14" class="level4 doc-section doc-section-parameters">
+<h4 class="doc-section doc-section-parameters anchored" data-anchor-id="parameters-14">Parameters</h4>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 14%">
@@ -848,8 +1082,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tbody>
 </table>
 </section>
-<section id="returns-11" class="level4 doc-section doc-section-returns">
-<h4 class="doc-section doc-section-returns anchored" data-anchor-id="returns-11">Returns</h4>
+<section id="returns-14" class="level4 doc-section doc-section-returns">
+<h4 class="doc-section doc-section-returns anchored" data-anchor-id="returns-14">Returns</h4>
 <table class="caption-top table">
 <thead>
 <tr class="header">
@@ -870,10 +1104,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="probabilistic_piping.PipingEquations.verval" class="level3">
 <h3 class="anchored" data-anchor-id="probabilistic_piping.PipingEquations.verval">verval</h3>
-<div class="sourceCode" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>PipingEquations.verval(h, h_exit, r_c, D_cover)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>PipingEquations.verval(h, h_exit, r_c, D_cover)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Berekening van het verval.</p>
-<section id="parameters-12" class="level4 doc-section doc-section-parameters">
-<h4 class="doc-section doc-section-parameters anchored" data-anchor-id="parameters-12">Parameters</h4>
+<section id="parameters-15" class="level4 doc-section doc-section-parameters">
+<h4 class="doc-section doc-section-parameters anchored" data-anchor-id="parameters-15">Parameters</h4>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 11%">
@@ -917,8 +1151,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tbody>
 </table>
 </section>
-<section id="returns-12" class="level4 doc-section doc-section-returns">
-<h4 class="doc-section doc-section-returns anchored" data-anchor-id="returns-12">Returns</h4>
+<section id="returns-15" class="level4 doc-section doc-section-returns">
+<h4 class="doc-section doc-section-returns anchored" data-anchor-id="returns-15">Returns</h4>
 <table class="caption-top table">
 <thead>
 <tr class="header">

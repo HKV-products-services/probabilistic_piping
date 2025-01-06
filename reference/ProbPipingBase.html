@@ -145,6 +145,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#probabilistic_piping.ProbPipingBase" id="toc-probabilistic_piping.ProbPipingBase" class="nav-link active" data-scroll-target="#probabilistic_piping.ProbPipingBase">ProbPipingBase</a>
   <ul class="collapse">
   <li><a href="#attributes" id="toc-attributes" class="nav-link" data-scroll-target="#attributes">Attributes</a></li>
+  <li><a href="#methods" id="toc-methods" class="nav-link" data-scroll-target="#methods">Methods</a>
+  <ul class="collapse">
+  <li><a href="#probabilistic_piping.ProbPipingBase.get_FORM_startpoint" id="toc-probabilistic_piping.ProbPipingBase.get_FORM_startpoint" class="nav-link" data-scroll-target="#probabilistic_piping.ProbPipingBase.get_FORM_startpoint">get_FORM_startpoint</a></li>
+  <li><a href="#probabilistic_piping.ProbPipingBase.prob_calculation" id="toc-probabilistic_piping.ProbPipingBase.prob_calculation" class="nav-link" data-scroll-target="#probabilistic_piping.ProbPipingBase.prob_calculation">prob_calculation</a></li>
+  <li><a href="#probabilistic_piping.ProbPipingBase.set_calc_options" id="toc-probabilistic_piping.ProbPipingBase.set_calc_options" class="nav-link" data-scroll-target="#probabilistic_piping.ProbPipingBase.set_calc_options">set_calc_options</a></li>
+  </ul></li>
   </ul></li>
   </ul>
 </nav>
@@ -202,8 +208,259 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 </tbody>
 </table>
+</section>
+<section id="methods" class="level2">
+<h2 class="anchored" data-anchor-id="methods">Methods</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="#probabilistic_piping.ProbPipingBase.get_FORM_startpoint">get_FORM_startpoint</a></td>
+<td>Get the starting point for the FORM analysis.</td>
+</tr>
+<tr class="even">
+<td><a href="#probabilistic_piping.ProbPipingBase.prob_calculation">prob_calculation</a></td>
+<td>Perform a probabilistic calculation.</td>
+</tr>
+<tr class="odd">
+<td><a href="#probabilistic_piping.ProbPipingBase.set_calc_options">set_calc_options</a></td>
+<td>Set calculation options for the optimization algorithm.</td>
+</tr>
+</tbody>
+</table>
+<section id="probabilistic_piping.ProbPipingBase.get_FORM_startpoint" class="level3">
+<h3 class="anchored" data-anchor-id="probabilistic_piping.ProbPipingBase.get_FORM_startpoint">get_FORM_startpoint</h3>
+<div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>ProbPipingBase.get_FORM_startpoint(distribution, otzfunc, method<span class="op">=</span><span class="st">'slice'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Get the starting point for the FORM analysis.</p>
+<section id="parameters" class="level4 doc-section doc-section-parameters">
+<h4 class="doc-section doc-section-parameters anchored" data-anchor-id="parameters">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 11%">
+<col style="width: 21%">
+<col style="width: 56%">
+<col style="width: 10%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>distribution</td>
+<td>ot.ComposedDistribution</td>
+<td>Distribution of the input variables.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td>otzfunc</td>
+<td>ot.PythonFunction</td>
+<td>OpenTURNS Python function representing the limit state function.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="odd">
+<td>method</td>
+<td>str</td>
+<td>Method to determine the starting point, by default “slice”.</td>
+<td><code>'slice'</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns" class="level4 doc-section doc-section-returns">
+<h4 class="doc-section doc-section-returns anchored" data-anchor-id="returns">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td></td>
+<td>list[float]</td>
+<td>Starting point for the FORM analysis.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="probabilistic_piping.ProbPipingBase.prob_calculation" class="level3">
+<h3 class="anchored" data-anchor-id="probabilistic_piping.ProbPipingBase.prob_calculation">prob_calculation</h3>
+<div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>ProbPipingBase.prob_calculation(</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    h,</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    z_type,</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    z_func,</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    settings,</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    prob_input,</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    copula<span class="op">=</span><span class="va">None</span>,</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    leave<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Perform a probabilistic calculation.</p>
+<section id="parameters-1" class="level4 doc-section doc-section-parameters">
+<h4 class="doc-section doc-section-parameters anchored" data-anchor-id="parameters-1">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 12%">
+<col style="width: 25%">
+<col style="width: 51%">
+<col style="width: 12%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>h</td>
+<td>float</td>
+<td>Water level.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td>z_type</td>
+<td>str</td>
+<td>Type of the limit state function.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="odd">
+<td>z_func</td>
+<td>Callable</td>
+<td>Limit state function.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td>settings</td>
+<td>PipingSettings</td>
+<td>Piping settings.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="odd">
+<td>prob_input</td>
+<td>ProbInput</td>
+<td>Probabilistic input settings.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td>copula</td>
+<td>ot.Distribution or None</td>
+<td>Copula distribution, by default None.</td>
+<td><code>None</code></td>
+</tr>
+<tr class="odd">
+<td>leave</td>
+<td>bool</td>
+<td>If True, remove the progress bar, by default True</td>
+<td><code>True</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-1" class="level4 doc-section doc-section-returns">
+<h4 class="doc-section doc-section-returns anchored" data-anchor-id="returns-1">Returns</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 10%">
+<col style="width: 48%">
+<col style="width: 40%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td></td>
+<td>tuple[PipingSettings, ProbResult]</td>
+<td>Updated settings and results.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="probabilistic_piping.ProbPipingBase.set_calc_options" class="level3">
+<h3 class="anchored" data-anchor-id="probabilistic_piping.ProbPipingBase.set_calc_options">set_calc_options</h3>
+<div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>ProbPipingBase.set_calc_options(optimAlgo, calc_options, debug)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Set calculation options for the optimization algorithm.</p>
+<section id="parameters-2" class="level4 doc-section doc-section-parameters">
+<h4 class="doc-section doc-section-parameters anchored" data-anchor-id="parameters-2">Parameters</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 5%">
+<col style="width: 39%">
+<col style="width: 49%">
+<col style="width: 5%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>optimAlgo</td>
+<td>ot.AbdoRackwitz or ot.Cobyla or ot.ProbabilitySimulationAlgorithm or ot.DirectionalSampling</td>
+<td>The optimization algorithm instance to configure.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td>calc_options</td>
+<td>dict of str to float or int</td>
+<td>A dictionary containing the calculation options to set, where keys are option names and values are option values.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="odd">
+<td>debug</td>
+<td>bool</td>
+<td>If True, print debug information about the options being set.</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-2" class="level4 doc-section doc-section-returns">
+<h4 class="doc-section doc-section-returns anchored" data-anchor-id="returns-2">Returns</h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td></td>
+<td>None</td>
+<td></td>
+</tr>
+</tbody>
+</table>
 
 
+</section>
+</section>
 </section>
 </section>
 
