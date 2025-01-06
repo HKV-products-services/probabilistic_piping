@@ -10,6 +10,21 @@ from probabilistic_piping import (
 )
 
 
+def test_full_semiprob():
+    data_path = Path(__file__).parent / "data" / "full_test.xlsx"
+    df_input = pd.read_excel(data_path, sheet_name="input", index_col=0, header=0)
+
+    # Create probabilistic piping object and calculate semi-probabilistic probability
+    prob = ProbPipingFixedWaterlevel(progress=False)
+    inp_data = ProbInput.from_dataframe(df_input)
+    result = prob.fixed_waterlevel_semiprob(inp_data)
+
+    assert np.isclose(0.414071792720178, result.beta_u, rtol=1e-08, atol=1e-08)
+    assert np.isclose(0.184755478797373, result.beta_h, rtol=1e-08, atol=1e-08)
+    assert np.isclose(7.77022397615446, result.beta_p, rtol=1e-08, atol=1e-08)
+    assert np.isclose(3.94129173741931e-15, result.pf_combi, rtol=1e-08, atol=1e-08)
+
+
 def test_full_fragilitycurve_simple():
     data_path = Path(__file__).parent / "data" / "full_test.xlsx"
     with pd.ExcelFile(data_path) as xlsx:

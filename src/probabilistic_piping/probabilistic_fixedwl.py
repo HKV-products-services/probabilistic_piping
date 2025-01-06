@@ -134,8 +134,7 @@ class ProbPipingFixedWaterlevelBase(ProbPipingBase):
         result["pf_h"] = pf_h
         result["pf_p"] = pf_p
         result["pf_combi"] = pf_combi
-
-        result = pd.DataFrame.from_dict(result, orient="index")
+        result = pd.Series(result)
 
         return result
 
