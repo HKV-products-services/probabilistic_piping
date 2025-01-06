@@ -197,7 +197,7 @@ class ProbPipingFixedWaterlevelSimple(ProbPipingFixedWaterlevelBase):
         results_c = ProbResults()
 
         if hlist is None:
-            hlist = self.hlist.copy()
+            hlist = prob_input.hlist.copy()
 
         if settings is None:
             settings = PipingSettings()
