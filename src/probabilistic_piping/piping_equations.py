@@ -4,6 +4,53 @@ from probabilistic_piping.piping_settings import PipingSettings
 
 
 class PipingEquations:
+    """
+    A class containing various static and class methods for performing piping calculations.
+
+    Methods
+    -------
+    stijghoogte(h_exit, r_exit, h)
+        Calculate the generic head difference.
+    verval(h, h_exit, r_c, D_cover)
+        Calculate the head loss.
+    delta_phi_cu(settings)
+        Calculate the critical head difference for uplift.
+    phi_exit(settings)
+        Calculate the head in the aquifer at the exit point.
+    F_res(settings)
+        Calculate the resistance factor.
+    F_scale(settings)
+        Calculate the scale factor.
+    F_geo(settings)
+        Calculate the geo factor.
+    H_c(settings)
+        Calculate the critical head loss.
+    _Z_p(m_p, H_c, h, h_exit, r_c, D_cover)
+        Calculate the Z_p value.
+    Z_p(settings)
+        Calculate the Sellmeijer limit state function.
+    _sf_p(m_p, H_c, h, h_exit, r_c, D_cover)
+        Calculate the Sellmeijer safety factor.
+    _sf_u(m_u, delta_phi_cu, phi_exit, h_exit)
+        Calculate the uplift safety factor.
+    _sf_h(i_ch, phi_exit, h_exit, D_cover)
+        Calculate the heave safety factor.
+    _Z_u(m_u, delta_phi_cu, phi_exit, h_exit)
+        Calculate the uplift limit state function.
+    Z_u(settings)
+        Calculate the uplift limit state function.
+    _Z_h(i_ch, phi_exit, h_exit, D_cover)
+        Calculate the heave limit state function.
+    Z_h(settings)
+        Calculate the heave limit state function.
+    _Z_all(Z_u, Z_h, Z_p)
+        Calculate the combined limit state function for uplift, heave, and Sellmeijer.
+    Z_all(settings)
+        Calculate the overall limit state function for all failure mechanisms.
+    stijghoogte_responsfactor(waterstand, settings)
+        Calculate the head in the aquifer at the exit point using the response factor method.
+    """
+
     @staticmethod
     def stijghoogte(
         h_exit: float | np.ndarray, r_exit: float | np.ndarray, h: float | np.ndarray
@@ -204,7 +251,7 @@ class PipingEquations:
         D_cover: float | np.ndarray,
     ) -> float | np.ndarray:
         """
-        Grenstoestandsfunctie sellmeijer.
+        Berekening van de Z_p waarde.
 
         Parameters
         ----------
