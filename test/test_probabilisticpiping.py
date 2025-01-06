@@ -10,7 +10,7 @@ def test_full_fragilitycurve():
     df_path = Path(__file__).parent / "data" / "full_test.xlsx"
     with pd.ExcelFile(df_path) as xlsx:
         df_input = pd.read_excel(xlsx, sheet_name="input", index_col=0, header=0)
-        df_expected_results = pd.read_excel(
+        df_exp_results = pd.read_excel(
             xlsx, sheet_name="output", index_col=None, header=0
         )
 
@@ -40,12 +40,12 @@ def test_full_fragilitycurve():
     # Compare the results column by column
     for name in df_results.columns:
         if name == "mechanisme":
-            col_equal = df_results[name].to_numpy() == df_expected_results[name].to_numpy()
+            col_equal = df_results[name].to_numpy() == df_exp_results[name].to_numpy()
             assert col_equal.all()
         else:
             assert np.allclose(
                 df_results[name].to_numpy(),
-                df_expected_results[name].to_numpy(),
+                df_exp_results[name].to_numpy(),
                 rtol=1e-8,
                 atol=1e-8,
             )
