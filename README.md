@@ -35,4 +35,4 @@ With the `Pixi` command in powershell install the python environment:
 
 The `pixi.lock` file loads the correct packages and downloads to the `.pixi` file, you can use this environment in developing and resting.
 
-For questions about how to use this package contact `dupuit@hkv.nl`.
+For questions about how to use this package contact `dupuits@hkv.nl`.
