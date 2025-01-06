@@ -259,7 +259,7 @@ class PipingEquations:
         return result
 
     @classmethod
-    def _sf_p(
+    def sf_p(
         cls,
         m_p: float | np.ndarray,
         H_c: float | np.ndarray,
@@ -294,7 +294,7 @@ class PipingEquations:
         return (H_c * m_p) / cls.verval(h, h_exit, r_c, D_cover)
 
     @staticmethod
-    def _sf_u(
+    def sf_u(
         m_u: float | np.ndarray,
         delta_phi_cu: float | np.ndarray,
         phi_exit: float | np.ndarray,
@@ -322,7 +322,7 @@ class PipingEquations:
         return (m_u * delta_phi_cu) / (phi_exit - h_exit)
 
     @staticmethod
-    def _sf_h(
+    def sf_h(
         i_ch: float | np.ndarray,
         phi_exit: float | np.ndarray,
         h_exit: float | np.ndarray,

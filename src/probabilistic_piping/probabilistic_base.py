@@ -120,7 +120,7 @@ class ProbPipingBase(BaseModel):
     rel_stochasts: RelevantStochasts = field(default_factory=RelevantStochasts)
     piping_eq: PipingEquations = field(default_factory=PipingEquations)
 
-    def _prob_calculation(
+    def prob_calculation(
         self,
         h: float,
         z_type: str,
@@ -205,12 +205,12 @@ class ProbPipingBase(BaseModel):
 
         if rekentechniek.startswith("FORM"):
             startmethod = prob_input.calc_options["FORM start"]
-            startpoint = self._get_FORM_startpoint(
+            startpoint = self.get_FORM_startpoint(
                 distribution, otzfunc, method=startmethod
             )
             _, algoname = rekentechniek.split(" ")
             optimAlgo = getattr(ot, algoname)()
-            self._set_calc_options(optimAlgo, prob_input.calc_options, self.debug)
+            self.set_calc_options(optimAlgo, prob_input.calc_options, self.debug)
             algo = ot.FORM(optimAlgo, event, startpoint)
             if algoname == "Cobyla":
                 max_iter = prob_input.calc_options["MaximumIterationNumber"]
@@ -251,7 +251,7 @@ class ProbPipingBase(BaseModel):
         elif rekentechniek == "Monte Carlo":
             experiment = ot.MonteCarloExperiment()
             algo = ot.ProbabilitySimulationAlgorithm(event, experiment)
-            self._set_calc_options(algo, prob_input.calc_options, self.debug)
+            self.set_calc_options(algo, prob_input.calc_options, self.debug)
 
             with tqdm.tqdm(
                 desc=rekentechniek,
@@ -271,7 +271,7 @@ class ProbPipingBase(BaseModel):
             rootStrategy = getattr(ot, rootname)()
             samplingStrategy = getattr(ot, samplingname)()
             algo = ot.DirectionalSampling(event, rootStrategy, samplingStrategy)
-            self._set_calc_options(algo, prob_input.calc_options, self.debug)
+            self.set_calc_options(algo, prob_input.calc_options, self.debug)
             with tqdm.tqdm(
                 desc=rekentechniek,
                 disable=(not self.progress),
@@ -291,7 +291,7 @@ class ProbPipingBase(BaseModel):
         return settings, prob_result
 
     @staticmethod
-    def _set_calc_options(
+    def set_calc_options(
         optimAlgo: ot.AbdoRackwitz
         | ot.Cobyla
         | ot.ProbabilitySimulationAlgorithm
@@ -323,7 +323,7 @@ class ProbPipingBase(BaseModel):
                     print(f"set {option_name} to {option_val}")
 
     @staticmethod
-    def _get_FORM_startpoint(
+    def get_FORM_startpoint(
         distribution: ot.ComposedDistribution,
         otzfunc: ot.PythonFunction,
         method="slice",

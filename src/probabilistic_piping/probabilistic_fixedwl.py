@@ -79,13 +79,13 @@ class ProbPipingFixedWaterlevelBase(ProbPipingBase):
         Hc = self.piping_eq.H_c(settings)
         phi_exit = self.piping_eq.phi_exit(settings)
         delta_phi_cu = self.piping_eq.delta_phi_cu(settings)
-        sf_h = self.piping_eq._sf_h(
+        sf_h = self.piping_eq.sf_h(
             settings.i_ch, phi_exit, settings.h_exit, settings.D_cover
         )
-        sf_u = self.piping_eq._sf_u(
+        sf_u = self.piping_eq.sf_u(
             settings.m_u, delta_phi_cu, phi_exit, settings.h_exit
         )
-        sf_p = self.piping_eq._sf_p(
+        sf_p = self.piping_eq.sf_p(
             settings.m_p,
             Hc,
             settings.h,
@@ -264,7 +264,7 @@ class ProbPipingFixedWaterlevelSimple(ProbPipingFixedWaterlevelBase):
         settings_dict["h"] = h
         settings.set_params_fromdict(settings_dict)
 
-        _, result_u = self._prob_calculation(
+        _, result_u = self.prob_calculation(
             h,
             "uplift",
             self.piping_eq.Z_u,
@@ -273,7 +273,7 @@ class ProbPipingFixedWaterlevelSimple(ProbPipingFixedWaterlevelBase):
             copula=copula,
             leave=leave,
         )
-        _, result_h = self._prob_calculation(
+        _, result_h = self.prob_calculation(
             h,
             "heave",
             self.piping_eq.Z_h,
@@ -282,7 +282,7 @@ class ProbPipingFixedWaterlevelSimple(ProbPipingFixedWaterlevelBase):
             copula=copula,
             leave=leave,
         )
-        _, result_p = self._prob_calculation(
+        _, result_p = self.prob_calculation(
             h,
             "sellmeijer",
             self.piping_eq.Z_p,
@@ -439,7 +439,7 @@ class ProbPipingFixedWaterlevel(ProbPipingFixedWaterlevelBase):
             )
 
         # Bepaal faalkans
-        settings, results = self._prob_calculation(
+        settings, results = self.prob_calculation(
             h, z_type, z_func, settings, prob_input, copula=copula, leave=leave
         )
 
