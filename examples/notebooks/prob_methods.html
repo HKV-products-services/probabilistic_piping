@@ -234,7 +234,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>df_abdo.loc[<span class="st">"Rekentechniek"</span>, <span class="st">"Waarde"</span>] <span class="op">=</span> <span class="st">"FORM AbdoRackwitz"</span></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>inp_abdo <span class="op">=</span> ProbInput.from_dataframe(df_abdo)</span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>_, r_abdo <span class="op">=</span> prob.fixed_waterlevel_failureprobability(inp_abdo, h<span class="op">=</span><span class="fl">6.0</span>, z_type<span class="op">=</span><span class="st">"combi"</span>)</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>r_abdo.prob_cond</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>r_abdo.prob_cond</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="4">
 <pre><code>0.0005916558092986339</code></pre>
 </div>
@@ -247,7 +248,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>df_mc.loc[<span class="st">"Rekentechniek"</span>, <span class="st">"Waarde"</span>] <span class="op">=</span> <span class="st">"Monte Carlo"</span></span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>inp_mc <span class="op">=</span> ProbInput.from_dataframe(df_mc)</span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>_, r_mc <span class="op">=</span> prob.fixed_waterlevel_failureprobability(inp_mc, h<span class="op">=</span><span class="fl">6.0</span>, z_type<span class="op">=</span><span class="st">"combi"</span>)</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>r_mc.prob_cond</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>r_mc.prob_cond</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="5">
 <pre><code>0.0005519125683060111</code></pre>
 </div>
@@ -262,7 +264,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>df_ds.loc[<span class="st">"BlockSize"</span>, <span class="st">"Waarde"</span>] <span class="op">=</span> <span class="dv">1</span></span>
 <span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>inp_ds <span class="op">=</span> ProbInput.from_dataframe(df_ds)</span>
 <span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>_, r_ds <span class="op">=</span> prob.fixed_waterlevel_failureprobability(inp_ds, h<span class="op">=</span><span class="fl">6.0</span>, z_type<span class="op">=</span><span class="st">"combi"</span>)</span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>r_ds.prob_cond</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>r_ds.prob_cond</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="6">
 <pre><code>0.0009246335299022196</code></pre>
 </div>
