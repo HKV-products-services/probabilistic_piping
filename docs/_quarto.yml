@@ -9,6 +9,7 @@ website:
         menu:
           - examples/notebooks/introduction.ipynb
           - examples/notebooks/fixed_waterlevel.ipynb
+          - examples/notebooks/prob_methods.ipynb
       - text: "Python API"
         file: reference/index.qmd
     right:
