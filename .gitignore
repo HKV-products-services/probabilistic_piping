@@ -16,3 +16,4 @@ docs/reference
 .quarto/*
 # vscode
 .vscode
+/docs/_site

@@ -1,18 +1,23 @@
 project:
   type: website
-  output-dir: docs
 
 website:
   title: "Probabilistic piping"
   navbar:
     left:
+      - text: "Examples"
+        menu:
+          - examples/notebooks/introduction.ipynb
+          - examples/notebooks/fixed_waterlevel.ipynb
       - text: "Python API"
         file: reference/index.qmd
-
+    right:
+      - icon: github
+        href: https://github.com/HKV-products-services/probabilistic_piping
+        aria-label: GitHub
 format:
   html:
     theme: cosmo
-    css: styles.css
     toc: true
 
 quartodoc:
