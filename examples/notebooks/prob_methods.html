@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>probresult – Probabilistic piping</title>
+<title>Applying various probabilistic methods – Probabilistic piping</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -57,22 +57,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </style>
 
 
-<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
-<script src="../site_libs/quarto-nav/headroom.min.js"></script>
-<script src="../site_libs/clipboard/clipboard.min.js"></script>
-<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
-<script src="../site_libs/quarto-search/fuse.min.js"></script>
-<script src="../site_libs/quarto-search/quarto-search.js"></script>
-<meta name="quarto:offset" content="../">
-<script src="../site_libs/quarto-html/quarto.js"></script>
-<script src="../site_libs/quarto-html/popper.min.js"></script>
-<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
-<script src="../site_libs/quarto-html/anchor.min.js"></script>
-<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
-<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -111,7 +111,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
-    <a class="navbar-brand" href="../index.html">
+    <a class="navbar-brand" href="../../index.html">
     <span class="navbar-title">Probabilistic piping</span>
     </a>
   </div>
@@ -127,21 +127,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     </a>
     <ul class="dropdown-menu" aria-labelledby="nav-menu-examples">    
         <li>
-    <a class="dropdown-item" href="../examples/notebooks/introduction.html">
+    <a class="dropdown-item" href="../../examples/notebooks/introduction.html">
  <span class="dropdown-text">Introduction to probabilistic piping</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="../examples/notebooks/fixed_waterlevel.html">
+    <a class="dropdown-item" href="../../examples/notebooks/fixed_waterlevel.html">
  <span class="dropdown-text">Fixed water level application</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="../examples/notebooks/prob_methods.html">
+    <a class="dropdown-item" href="../../examples/notebooks/prob_methods.html">
  <span class="dropdown-text">Applying various probabilistic methods</span></a>
   </li>  
     </ul>
   </li>
   <li class="nav-item">
-    <a class="nav-link" href="../reference/index.html"> 
+    <a class="nav-link" href="../../reference/index.html"> 
 <span class="menu-text">Python API</span></a>
   </li>  
 </ul>
@@ -167,219 +167,108 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#probabilistic_piping.ProbResult" id="toc-probabilistic_piping.ProbResult" class="nav-link active" data-scroll-target="#probabilistic_piping.ProbResult">ProbResult</a>
-  <ul class="collapse">
-  <li><a href="#attributes" id="toc-attributes" class="nav-link" data-scroll-target="#attributes">Attributes</a></li>
-  <li><a href="#methods" id="toc-methods" class="nav-link" data-scroll-target="#methods">Methods</a>
-  <ul class="collapse">
-  <li><a href="#probabilistic_piping.ProbResult.from_FORM_result" id="toc-probabilistic_piping.ProbResult.from_FORM_result" class="nav-link" data-scroll-target="#probabilistic_piping.ProbResult.from_FORM_result">from_FORM_result</a></li>
-  <li><a href="#probabilistic_piping.ProbResult.from_sim_result" id="toc-probabilistic_piping.ProbResult.from_sim_result" class="nav-link" data-scroll-target="#probabilistic_piping.ProbResult.from_sim_result">from_sim_result</a></li>
-  </ul></li>
-  </ul></li>
+  <li><a href="#input" id="toc-input" class="nav-link active" data-scroll-target="#input">Input</a></li>
+  <li><a href="#form-cobyla" id="toc-form-cobyla" class="nav-link" data-scroll-target="#form-cobyla">FORM Cobyla</a></li>
+  <li><a href="#form-abdorackwitz" id="toc-form-abdorackwitz" class="nav-link" data-scroll-target="#form-abdorackwitz">FORM AbdoRackwitz</a></li>
+  <li><a href="#monte-carlo" id="toc-monte-carlo" class="nav-link" data-scroll-target="#monte-carlo">Monte Carlo</a></li>
+  <li><a href="#directional-sampling" id="toc-directional-sampling" class="nav-link" data-scroll-target="#directional-sampling">Directional Sampling</a></li>
   </ul>
 </nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Applying various probabilistic methods</h1>
+</div>
 
 
 
-<section id="probabilistic_piping.ProbResult" class="level1">
-<h1>ProbResult</h1>
-<div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>ProbResult()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>A class to represent the result of a probabilistic analysis.</p>
-<p>Attributes h : float or None Water level. prob_cond : float Conditional probability of failure. converged : bool Indicates whether the analysis has converged. z_val : float or None Value of the limit state function. physical_design : dict of str to float or None Physical space design point. standard_design : dict of str to float or None Standard space design point. importancefactors : dict of str to float or None Importance factors. functionevals : int Number of function evaluations. mechanism : str or None Type of the limit state function.</p>
-<section id="attributes" class="level2">
-<h2 class="anchored" data-anchor-id="attributes">Attributes</h2>
-<table class="caption-top table">
-<thead>
-<tr class="header">
-<th>Name</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><a href="#probabilistic_piping.ProbResult.converged">converged</a></td>
-<td>bool(x) -&gt; bool</td>
-</tr>
-<tr class="even">
-<td><a href="#probabilistic_piping.ProbResult.functionevals">functionevals</a></td>
-<td>int([x]) -&gt; integer</td>
-</tr>
-<tr class="odd">
-<td><a href="#probabilistic_piping.ProbResult.h">h</a></td>
-<td></td>
-</tr>
-<tr class="even">
-<td><a href="#probabilistic_piping.ProbResult.importancefactors">importancefactors</a></td>
-<td></td>
-</tr>
-<tr class="odd">
-<td><a href="#probabilistic_piping.ProbResult.mechanism">mechanism</a></td>
-<td></td>
-</tr>
-<tr class="even">
-<td><a href="#probabilistic_piping.ProbResult.physical_design">physical_design</a></td>
-<td></td>
-</tr>
-<tr class="odd">
-<td><a href="#probabilistic_piping.ProbResult.prob_cond">prob_cond</a></td>
-<td></td>
-</tr>
-<tr class="even">
-<td><a href="#probabilistic_piping.ProbResult.standard_design">standard_design</a></td>
-<td></td>
-</tr>
-<tr class="odd">
-<td><a href="#probabilistic_piping.ProbResult.z_val">z_val</a></td>
-<td></td>
-</tr>
-</tbody>
-</table>
-</section>
-<section id="methods" class="level2">
-<h2 class="anchored" data-anchor-id="methods">Methods</h2>
-<table class="caption-top table">
-<thead>
-<tr class="header">
-<th>Name</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><a href="#probabilistic_piping.ProbResult.from_FORM_result">from_FORM_result</a></td>
-<td>Create a ProbResult from a FORM analysis.</td>
-</tr>
-<tr class="even">
-<td><a href="#probabilistic_piping.ProbResult.from_sim_result">from_sim_result</a></td>
-<td>Create a ProbResult from a simulation analysis.</td>
-</tr>
-</tbody>
-</table>
-<section id="probabilistic_piping.ProbResult.from_FORM_result" class="level3">
-<h3 class="anchored" data-anchor-id="probabilistic_piping.ProbResult.from_FORM_result">from_FORM_result</h3>
-<div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>ProbResult.from_FORM_result(h, optimAlgo, otzfunc, result, z_type)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>Create a ProbResult from a FORM analysis.</p>
-<section id="parameters" class="level4 doc-section doc-section-parameters">
-<h4 class="doc-section doc-section-parameters anchored" data-anchor-id="parameters">Parameters</h4>
-<table class="caption-top table">
-<colgroup>
-<col style="width: 9%">
-<col style="width: 25%">
-<col style="width: 55%">
-<col style="width: 10%">
-</colgroup>
-<thead>
-<tr class="header">
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>h</td>
-<td>float</td>
-<td>Water level.</td>
-<td><em>required</em></td>
-</tr>
-<tr class="even">
-<td>optimAlgo</td>
-<td>ot.AbdoRackwitz or ot.Cobyla</td>
-<td>Optimization algorithm used in the FORM analysis.</td>
-<td><em>required</em></td>
-</tr>
-<tr class="odd">
-<td>otzfunc</td>
-<td>ot.Function</td>
-<td>OpenTURNS Python function representing the limit state function.</td>
-<td><em>required</em></td>
-</tr>
-<tr class="even">
-<td>result</td>
-<td>ot.FORMResult</td>
-<td>Result of the FORM analysis.</td>
-<td><em>required</em></td>
-</tr>
-<tr class="odd">
-<td>z_type</td>
-<td>str</td>
-<td>Type of the limit state function.</td>
-<td><em>required</em></td>
-</tr>
-</tbody>
-</table>
-</section>
-</section>
-<section id="probabilistic_piping.ProbResult.from_sim_result" class="level3">
-<h3 class="anchored" data-anchor-id="probabilistic_piping.ProbResult.from_sim_result">from_sim_result</h3>
-<div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>ProbResult.from_sim_result(h, algo, otzfunc, distribution, result, z_type)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>Create a ProbResult from a simulation analysis.</p>
-<section id="parameters-1" class="level4 doc-section doc-section-parameters">
-<h4 class="doc-section doc-section-parameters anchored" data-anchor-id="parameters-1">Parameters</h4>
-<table class="caption-top table">
-<colgroup>
-<col style="width: 9%">
-<col style="width: 39%">
-<col style="width: 43%">
-<col style="width: 7%">
-</colgroup>
-<thead>
-<tr class="header">
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-<th>Default</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>h</td>
-<td>float</td>
-<td>Water level.</td>
-<td><em>required</em></td>
-</tr>
-<tr class="even">
-<td>algo</td>
-<td>ot.ProbabilitySimulationAlgorithm or ot.DirectionalSampling</td>
-<td>Simulation algorithm used in the analysis.</td>
-<td><em>required</em></td>
-</tr>
-<tr class="odd">
-<td>otzfunc</td>
-<td>ot.PythonFunction or ot.MemoizeFunction</td>
-<td>OpenTURNS Python function representing the limit state function.</td>
-<td><em>required</em></td>
-</tr>
-<tr class="even">
-<td>distribution</td>
-<td>ot.ComposedDistribution</td>
-<td>Distribution of the input variables.</td>
-<td><em>required</em></td>
-</tr>
-<tr class="odd">
-<td>result</td>
-<td>ot.OptimizationResult</td>
-<td>Result of the simulation analysis.</td>
-<td><em>required</em></td>
-</tr>
-<tr class="even">
-<td>z_type</td>
-<td>str</td>
-<td>Type of the limit state function.</td>
-<td><em>required</em></td>
-</tr>
-</tbody>
-</table>
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
 
 
+</header>
+
+
+<p>In the following, the application of a number of available probabilistic methods is shown using similar input.</p>
+<div id="cell-2" class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> probabilistic_piping <span class="im">import</span> ProbInput, ProbPipingFixedWaterlevel</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="input" class="level2">
+<h2 class="anchored" data-anchor-id="input">Input</h2>
+<div id="cell-4" class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>data_path <span class="op">=</span> Path(<span class="st">"../../../test/data/full_test.xlsx"</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>df_input <span class="op">=</span> pd.read_excel(data_path, sheet_name<span class="op">=</span><span class="st">"input"</span>, index_col<span class="op">=</span><span class="dv">0</span>, header<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>prob <span class="op">=</span> ProbPipingFixedWaterlevel(progress<span class="op">=</span><span class="va">False</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 </section>
+<section id="form-cobyla" class="level2">
+<h2 class="anchored" data-anchor-id="form-cobyla">FORM Cobyla</h2>
+<div id="cell-6" class="cell" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>df_form_coby <span class="op">=</span> df_input.copy()</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>df_form_coby.loc[<span class="st">"Rekentechniek"</span>, <span class="st">"Waarde"</span>] <span class="op">=</span> <span class="st">"FORM Cobyla"</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>inp_form_coby <span class="op">=</span> ProbInput.from_dataframe(df_form_coby)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>_, r_form_coby <span class="op">=</span> prob.fixed_waterlevel_failureprobability(inp_form_coby, h<span class="op">=</span><span class="fl">6.0</span>, z_type<span class="op">=</span><span class="st">"combi"</span>)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>r_form_coby.prob_cond</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="3">
+<pre><code>0.0006153617612051954</code></pre>
+</div>
+</div>
 </section>
+<section id="form-abdorackwitz" class="level2">
+<h2 class="anchored" data-anchor-id="form-abdorackwitz">FORM AbdoRackwitz</h2>
+<div id="cell-8" class="cell" data-execution_count="4">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>df_form_abdo <span class="op">=</span> df_input.copy()</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>df_form_abdo.loc[<span class="st">"Rekentechniek"</span>, <span class="st">"Waarde"</span>] <span class="op">=</span> <span class="st">"FORM AbdoRackwitz"</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>inp_form_abdo <span class="op">=</span> ProbInput.from_dataframe(df_form_abdo)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>_, r_form_abdo <span class="op">=</span> prob.fixed_waterlevel_failureprobability(inp_form_abdo, h<span class="op">=</span><span class="fl">6.0</span>, z_type<span class="op">=</span><span class="st">"combi"</span>)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>r_form_abdo.prob_cond</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="4">
+<pre><code>0.0005916558092986339</code></pre>
+</div>
+</div>
 </section>
+<section id="monte-carlo" class="level2">
+<h2 class="anchored" data-anchor-id="monte-carlo">Monte Carlo</h2>
+<div id="cell-10" class="cell" data-execution_count="5">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>df_mc <span class="op">=</span> df_input.copy()</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>df_mc.loc[<span class="st">"Rekentechniek"</span>, <span class="st">"Waarde"</span>] <span class="op">=</span> <span class="st">"Monte Carlo"</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>inp_mc <span class="op">=</span> ProbInput.from_dataframe(df_mc)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>_, r_mc <span class="op">=</span> prob.fixed_waterlevel_failureprobability(inp_mc, h<span class="op">=</span><span class="fl">6.0</span>, z_type<span class="op">=</span><span class="st">"combi"</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>r_mc.prob_cond</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="5">
+<pre><code>0.0005519125683060111</code></pre>
+</div>
+</div>
+</section>
+<section id="directional-sampling" class="level2">
+<h2 class="anchored" data-anchor-id="directional-sampling">Directional Sampling</h2>
+<div id="cell-12" class="cell" data-execution_count="6">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>df_ds <span class="op">=</span> df_input.copy()</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>df_ds.loc[<span class="st">"Rekentechniek"</span>, <span class="st">"Waarde"</span>] <span class="op">=</span> <span class="st">"DS MediumSafe OrthogonalDirection"</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>df_ds.loc[<span class="st">"MaximumOuterSampling"</span>, <span class="st">"Waarde"</span>] <span class="op">=</span> <span class="dv">10_000</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>df_ds.loc[<span class="st">"BlockSize"</span>, <span class="st">"Waarde"</span>] <span class="op">=</span> <span class="dv">1</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>inp_ds <span class="op">=</span> ProbInput.from_dataframe(df_ds)</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>_, r_ds <span class="op">=</span> prob.fixed_waterlevel_failureprobability(inp_ds, h<span class="op">=</span><span class="fl">6.0</span>, z_type<span class="op">=</span><span class="st">"combi"</span>)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>r_ds.prob_cond</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="6">
+<pre><code>0.0009246335299022196</code></pre>
+</div>
+</div>
+
+
 </section>
 
 </main> <!-- /main -->
