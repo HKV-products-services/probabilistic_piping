@@ -10,7 +10,7 @@ packages = ["probabilistic_piping"]
 
 [project]
 name = "probabilistic_piping"
-version = "0.0.2"
+version = "0.0.3"
 description = "Python package for probabilistic piping calculations"
 readme = "README.md"
 license = {text = "GNU-GPL V3"}

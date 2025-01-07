@@ -5983,8 +5983,8 @@ packages:
   timestamp: 1732001571166
 - pypi: src
   name: probabilistic-piping
-  version: 0.0.2
-  sha256: 67fb5e9fef1231949b89f678e5c91d229be0fd54ea7824f7c6ffd56957e639ac
+  version: 0.0.3
+  sha256: 5c684c3ee4bbbda7cf20b216ba12f3af2444f6b25da35cd731965f65ee76186b
   requires_dist:
   - numpy
   - pandas
