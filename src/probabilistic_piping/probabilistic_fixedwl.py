@@ -68,7 +68,7 @@ class ProbPipingFixedWaterlevelBase(ProbPipingBase):
         settings_dict = {}
         if settings is None:
             settings = PipingSettings()
-            settings_dict = {**prob_input.params, **prob_input.karvals}
+            settings_dict = {**prob_input.params, **prob_input.charvals}
 
         # Update buitenwaterstand en eventuele default settings
         if h is not None:
@@ -117,7 +117,7 @@ class ProbPipingFixedWaterlevelBase(ProbPipingBase):
 
         # Maak een pandas object aan met de waardes voor de relevante parameters
         result = {}
-        for k in prob_input.karvals:
+        for k in prob_input.charvals:
             result[k] = getattr(settings, k)
         for k in prob_input.params:
             result[k] = getattr(settings, k)
@@ -253,7 +253,7 @@ class ProbPipingFixedWaterlevelSimple(ProbPipingFixedWaterlevelBase):
             Updated settings and results for uplift, heave, Sellmeijer, and combined mechanisms.
         """
         if h is None:
-            h = prob_input.karvals["h"]
+            h = prob_input.charvals["h"]
 
         # Maak settings object aan.
         settings_dict = {}
@@ -413,7 +413,7 @@ class ProbPipingFixedWaterlevel(ProbPipingFixedWaterlevelBase):
             Updated settings and results of the failure probability calculations.
         """
         if h is None:
-            h = prob_input.karvals["h"]
+            h = prob_input.charvals["h"]
 
         # Maak settings object aan.
         settings_dict = {}

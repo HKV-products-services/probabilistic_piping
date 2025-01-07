@@ -18,9 +18,9 @@ class ProbInput:
     ----------
     params : dict[str, float| int | str] | None
         Dictionary of deterministic parameters.
-    stochasten : dict[str, object] | None
+    stochasts : dict[str, object] | None
         Dictionary of stochastic distributions.
-    karvals : dict[str, float] | None
+    charvals : dict[str, float] | None
         Dictionary of characteristic values.
     calc_options : dict[str, float | int | str] | None
         Dictionary of calculation options.
@@ -29,8 +29,8 @@ class ProbInput:
     """
 
     params: dict[str, float | int | str] | None = None
-    stochasten: dict[str, object] | None = None
-    karvals: dict[str, float] | None = None
+    stochasts: dict[str, object] | None = None
+    charvals: dict[str, float] | None = None
     calc_options: dict[str, float | int | str] | None = None
     hlist: list[float] | None = None
 
@@ -50,15 +50,16 @@ class ProbInput:
         ProbInput
             An instance of the ProbInput class.
         """
-        params, dist_params, karvals, calc_options = {}, {}, {}, {}
+        params, dist_params, charvals, calc_options = {}, {}, {}, {}
         hlist = None
         for row in df.itertuples():
             var_type = row.Kansverdeling.lower().strip()
             var_name = row.Index
             if var_name == "h":
                 # Voeg normwaterstand en lijst van waterstanden toe
-                karvals[var_name] = row.Waarde
-                hlist = np.arange(row.Min, row.Max + row.Step, row.Step)
+                charvals[var_name] = row.Waarde
+                hsteps = int((row.Max - row.Min) / row.Step) + 1
+                hlist = np.linspace(row.Min, row.Max, hsteps)
             elif var_type == "rekeninstelling":
                 # Sla waarde als rekeninstelling op
                 if not isinstance(row.Waarde, str) and int(row.Waarde) == row.Waarde:
@@ -81,16 +82,16 @@ class ProbInput:
                     row.Afknot_links,
                     row.Afknot_rechts,
                 )
-                karvals[var_name] = row.Waarde
+                charvals[var_name] = row.Waarde
 
         # Sla informatie over variabelen op.
         params = {k: v for k, v in params.items()}
-        stochasten = {k: ProbInput.create_stochast(*v) for k, v in dist_params.items()}
-        karvals = {k: v for k, v in karvals.items()}
+        stochasts = {k: ProbInput.create_stochast(*v) for k, v in dist_params.items()}
+        charvals = {k: v for k, v in charvals.items()}
         calc_options = {k: v for k, v in calc_options.items()}
-        hlist = hlist
+        hlist = hlist.tolist()
 
-        return cls(params, stochasten, karvals, calc_options, hlist)
+        return cls(params, stochasts, charvals, calc_options, hlist)
 
     @staticmethod
     @validate_call

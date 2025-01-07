@@ -157,7 +157,7 @@ class ProbPipingBase(BaseModel):
         """
         # Bepaal de relevante stochasten subset
         subset_stochasten = {}
-        for sname, stochast in prob_input.stochasten.items():
+        for sname, stochast in prob_input.stochasts.items():
             if sname in self.rel_stochasts.algemeen:
                 subset_stochasten[sname] = stochast
             elif sname in getattr(self.rel_stochasts, z_type):
