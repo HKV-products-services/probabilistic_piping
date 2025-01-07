@@ -194,7 +194,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p>In this notebook, a barebones example is given on how to create a piping fragility curve using an Excel file as input for the <a href="../../probabilistic_piping/reference/ProbPipingFixedWaterlevel.html">ProbPipingFixedWaterlevel</a> class.</p>
+<p>In this notebook, a barebones example is given on how to create a piping fragility curve using an Excel file as input for the <a href="../../reference/ProbPipingFixedWaterlevel.html">ProbPipingFixedWaterlevel</a> class.</p>
 <div id="cell-2" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -206,7 +206,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <section id="creating-input-data" class="level2">
 <h2 class="anchored" data-anchor-id="creating-input-data">Creating input data</h2>
-<p>Probabilistic calculations expect an instance of <a href="../../probabilistic_piping/reference/ProbInput.html">ProbInput</a>. A practical way of making this <a href="../../probabilistic_piping/reference/ProbInput.html">ProbInput</a> instance is from a specially crafted Excel sheet.</p>
+<p>Probabilistic calculations expect an instance of <a href="../../reference/ProbInput.html">ProbInput</a>. A practical way of making this <a href="../../reference/ProbInput.html">ProbInput</a> instance is from a specially crafted Excel sheet.</p>
 <div id="cell-4" class="cell" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>data_path <span class="op">=</span> Path(<span class="st">"../../../test/data/full_test.xlsx"</span>)</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>df_input <span class="op">=</span> pd.read_excel(data_path, sheet_name<span class="op">=</span><span class="st">"input"</span>, index_col<span class="op">=</span><span class="dv">0</span>, header<span class="op">=</span><span class="dv">0</span>)</span>
@@ -305,7 +305,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-<p>The Excel data is converted to a <a href="../../probabilistic_piping/reference/ProbInput.html">ProbInput</a> instance using the classmethod <code>from_dataframe()</code>. The <a href="../../probabilistic_piping/reference/ProbInput.html">ProbInput</a> class has a number of attributes: <code>params</code>, <code>stochasts</code>, <code>charvals</code>, <code>calc_options</code> and <code>hlist</code>.</p>
+<p>The Excel data is converted to a <a href="../../reference/ProbInput.html">ProbInput</a> instance using the classmethod <code>from_dataframe()</code>. The <a href="../../reference/ProbInput.html">ProbInput</a> class has a number of attributes: <code>params</code>, <code>stochasts</code>, <code>charvals</code>, <code>calc_options</code> and <code>hlist</code>.</p>
 <p>Depending on the type of calculation, not all options need to be set.</p>
 <div id="cell-6" class="cell" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>inp_data <span class="op">=</span> ProbInput.from_dataframe(df_input)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -413,7 +413,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>prob <span class="op">=</span> ProbPipingFixedWaterlevel(progress<span class="op">=</span><span class="va">False</span>)</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>_, pc <span class="op">=</span> prob.fixed_waterlevel_fragilitycurve(inp_data, z_type<span class="op">=</span><span class="st">"combi"</span>, copula<span class="op">=</span><span class="va">None</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>The results variable contains a list of <a href="../../probabilistic_piping/reference/ProbResult.html">ProbResult</a> instances. A <a href="../../probabilistic_piping/reference/ProbResult.html">ProbResult</a> is created for each water level, as each water level is a separate probabilistic calculation. A <a href="../../probabilistic_piping/reference/ProbResult.html">ProbResult</a> instance contains detailed information of such probabilistic calculation.</p>
+<p>The results variable contains a list of <a href="../../reference/ProbResult.html">ProbResult</a> instances. A <a href="../../reference/ProbResult.html">ProbResult</a> is created for each water level, as each water level is a separate probabilistic calculation. A <a href="../../reference/ProbResult.html">ProbResult</a> instance contains detailed information of such probabilistic calculation.</p>
 <div id="cell-20" class="cell" data-execution_count="10">
 <div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>pc.results[<span class="op">-</span><span class="dv">1</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="10">
