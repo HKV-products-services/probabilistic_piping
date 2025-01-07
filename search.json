@@ -144,14 +144,14 @@
     "href": "examples/notebooks/prob_methods.html#form-cobyla",
     "title": "Applying various probabilistic methods",
     "section": "FORM Cobyla",
-    "text": "FORM Cobyla\n\ndf_form_coby = df_input.copy()\ndf_form_coby.loc[\"Rekentechniek\", \"Waarde\"] = \"FORM Cobyla\"\ninp_form_coby = ProbInput.from_dataframe(df_form_coby)\n_, r_form_coby = prob.fixed_waterlevel_failureprobability(inp_form_coby, h=6.0, z_type=\"combi\")\n\nr_form_coby.prob_cond\n\n0.0006153617612051954"
+    "text": "FORM Cobyla\n\ndf_coby = df_input.copy()\ndf_coby.loc[\"Rekentechniek\", \"Waarde\"] = \"FORM Cobyla\"\ninp_coby = ProbInput.from_dataframe(df_coby)\n_, r_coby = prob.fixed_waterlevel_failureprobability(inp_coby, h=6.0, z_type=\"combi\")\n\nr_coby.prob_cond\n\n0.0006153617612051954"
   },
   {
     "objectID": "examples/notebooks/prob_methods.html#form-abdorackwitz",
     "href": "examples/notebooks/prob_methods.html#form-abdorackwitz",
     "title": "Applying various probabilistic methods",
     "section": "FORM AbdoRackwitz",
-    "text": "FORM AbdoRackwitz\n\ndf_form_abdo = df_input.copy()\ndf_form_abdo.loc[\"Rekentechniek\", \"Waarde\"] = \"FORM AbdoRackwitz\"\ninp_form_abdo = ProbInput.from_dataframe(df_form_abdo)\n_, r_form_abdo = prob.fixed_waterlevel_failureprobability(inp_form_abdo, h=6.0, z_type=\"combi\")\nr_form_abdo.prob_cond\n\n0.0005916558092986339"
+    "text": "FORM AbdoRackwitz\n\ndf_abdo = df_input.copy()\ndf_abdo.loc[\"Rekentechniek\", \"Waarde\"] = \"FORM AbdoRackwitz\"\ninp_abdo = ProbInput.from_dataframe(df_abdo)\n_, r_abdo = prob.fixed_waterlevel_failureprobability(inp_abdo, h=6.0, z_type=\"combi\")\nr_abdo.prob_cond\n\n0.0005916558092986339"
   },
   {
     "objectID": "examples/notebooks/prob_methods.html#monte-carlo",

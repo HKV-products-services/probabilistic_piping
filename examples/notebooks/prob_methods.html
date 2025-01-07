@@ -216,12 +216,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="form-cobyla" class="level2">
 <h2 class="anchored" data-anchor-id="form-cobyla">FORM Cobyla</h2>
 <div id="cell-6" class="cell" data-execution_count="3">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>df_form_coby <span class="op">=</span> df_input.copy()</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>df_form_coby.loc[<span class="st">"Rekentechniek"</span>, <span class="st">"Waarde"</span>] <span class="op">=</span> <span class="st">"FORM Cobyla"</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>inp_form_coby <span class="op">=</span> ProbInput.from_dataframe(df_form_coby)</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>_, r_form_coby <span class="op">=</span> prob.fixed_waterlevel_failureprobability(inp_form_coby, h<span class="op">=</span><span class="fl">6.0</span>, z_type<span class="op">=</span><span class="st">"combi"</span>)</span>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>df_coby <span class="op">=</span> df_input.copy()</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>df_coby.loc[<span class="st">"Rekentechniek"</span>, <span class="st">"Waarde"</span>] <span class="op">=</span> <span class="st">"FORM Cobyla"</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>inp_coby <span class="op">=</span> ProbInput.from_dataframe(df_coby)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>_, r_coby <span class="op">=</span> prob.fixed_waterlevel_failureprobability(inp_coby, h<span class="op">=</span><span class="fl">6.0</span>, z_type<span class="op">=</span><span class="st">"combi"</span>)</span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>r_form_coby.prob_cond</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>r_coby.prob_cond</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="3">
 <pre><code>0.0006153617612051954</code></pre>
 </div>
@@ -230,11 +230,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="form-abdorackwitz" class="level2">
 <h2 class="anchored" data-anchor-id="form-abdorackwitz">FORM AbdoRackwitz</h2>
 <div id="cell-8" class="cell" data-execution_count="4">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>df_form_abdo <span class="op">=</span> df_input.copy()</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>df_form_abdo.loc[<span class="st">"Rekentechniek"</span>, <span class="st">"Waarde"</span>] <span class="op">=</span> <span class="st">"FORM AbdoRackwitz"</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>inp_form_abdo <span class="op">=</span> ProbInput.from_dataframe(df_form_abdo)</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>_, r_form_abdo <span class="op">=</span> prob.fixed_waterlevel_failureprobability(inp_form_abdo, h<span class="op">=</span><span class="fl">6.0</span>, z_type<span class="op">=</span><span class="st">"combi"</span>)</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>r_form_abdo.prob_cond</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>df_abdo <span class="op">=</span> df_input.copy()</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>df_abdo.loc[<span class="st">"Rekentechniek"</span>, <span class="st">"Waarde"</span>] <span class="op">=</span> <span class="st">"FORM AbdoRackwitz"</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>inp_abdo <span class="op">=</span> ProbInput.from_dataframe(df_abdo)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>_, r_abdo <span class="op">=</span> prob.fixed_waterlevel_failureprobability(inp_abdo, h<span class="op">=</span><span class="fl">6.0</span>, z_type<span class="op">=</span><span class="st">"combi"</span>)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>r_abdo.prob_cond</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="4">
 <pre><code>0.0005916558092986339</code></pre>
 </div>
