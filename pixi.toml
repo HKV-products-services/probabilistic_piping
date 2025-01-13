@@ -19,7 +19,7 @@ quartodoc-build = { cmd = "quartodoc build && rm objects.json", cwd = "docs" ,in
     ],outputs = [
     "docs/reference/"
     ]}
-quarto-preview = { cmd = "export QUARTO_PYTHON=python && quarto preview docs", depends_on = [
+quarto-preview = { cmd = "export QUARTO_PYTHON=python && quarto preview docs", depends-on = [
     "quartodoc-build",
 ] }
 quarto-check = { cmd = "quarto check all", depends-on = ["quartodoc-build"] }
