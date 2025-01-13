@@ -197,9 +197,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="doc-section doc-section-attributes anchored" data-anchor-id="attributes">Attributes</h2>
 <table class="caption-top table">
 <colgroup>
-<col style="width: 8%">
-<col style="width: 17%">
-<col style="width: 73%">
+<col style="width: 15%">
+<col style="width: 15%">
+<col style="width: 68%">
 </colgroup>
 <thead>
 <tr class="header">
@@ -303,6 +303,76 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>r_exit</td>
 <td>float or np.ndarray</td>
 <td>Dempingsfactor bij uitgang (dempingsfactor over de afstand intredepunt-uittredepunt) [-].</td>
+</tr>
+<tr class="even">
+<td>m_u</td>
+<td>float or np.ndarray</td>
+<td>Modelfactor uplift [-].</td>
+</tr>
+<tr class="odd">
+<td>i_ch</td>
+<td>float or np.ndarray</td>
+<td>Kritieke heavegradiënt [-].</td>
+</tr>
+<tr class="even">
+<td>d_70</td>
+<td>float or np.ndarray</td>
+<td>70% kwantiel korrelgrootte van pipinggevoelige zandlaag [m].</td>
+</tr>
+<tr class="odd">
+<td>eta</td>
+<td>float or np.ndarray</td>
+<td>White’s weerstandscoefficient (sleepkrachtfactor, constante van White) [-].</td>
+</tr>
+<tr class="even">
+<td>theta</td>
+<td>float or np.ndarray</td>
+<td>Rolweerstandshoek [graden].</td>
+</tr>
+<tr class="odd">
+<td>d_70m</td>
+<td>float or np.ndarray</td>
+<td>Gemiddelde waarde korrelgrootte van 70e kwantiel [m].</td>
+</tr>
+<tr class="even">
+<td>g</td>
+<td>float or np.ndarray</td>
+<td>Zwaartekrachtversnelling [kN/m^3].</td>
+</tr>
+<tr class="odd">
+<td>gamma_water</td>
+<td>float or np.ndarray</td>
+<td>Dichtheid water (volumiek gewicht water) [kN/m^3].</td>
+</tr>
+<tr class="even">
+<td>r_c</td>
+<td>float or np.ndarray</td>
+<td>Reductiefactor [-].</td>
+</tr>
+<tr class="odd">
+<td>v</td>
+<td>float or np.ndarray</td>
+<td>Kinematische viscositeit [m^2/s]</td>
+</tr>
+<tr class="even">
+<td>gamma_sp</td>
+<td>float or np.ndarray</td>
+<td>Volumieke dichtheid zand onder water [kN/m^3]</td>
+</tr>
+<tr class="odd">
+<td>krit_verval_factor</td>
+<td>float or np.ndarray</td>
+<td>Vermenigvuldigingsfactor voor kritiek verval, by default 1.0.</td>
+</tr>
+<tr class="even">
+<td>m_p</td>
+<td>float or np.ndarray</td>
+<td>Modelfactor piping [-].</td>
+</tr>
+<tr class="odd">
+<td>methode_stijghoogte</td>
+<td>str</td>
+<td>Stijghoogte methode, by default “responsfactor”</td>
 </tr>
 </tbody>
 </table>
