@@ -49,6 +49,34 @@ class PipingSettings:
          Verzadigd gewicht deklaag, gewogen gemiddelde voor meerdere lagen. [kN/m^3].
     r_exit : float or np.ndarray
         Dempingsfactor bij uitgang (dempingsfactor over de afstand intredepunt-uittredepunt) [-].
+    m_u : float or np.ndarray
+        Modelfactor uplift [-].
+    i_ch : float or np.ndarray
+        Kritieke heavegradiënt [-].
+    d_70 : float or np.ndarray
+        70% kwantiel korrelgrootte van pipinggevoelige zandlaag [m].
+    eta : float or np.ndarray
+        White's weerstandscoefficient (sleepkrachtfactor, constante van White) [-].
+    theta : float or np.ndarray
+        Rolweerstandshoek [graden].
+    d_70m : float or np.ndarray
+        Gemiddelde waarde korrelgrootte van 70e kwantiel [m].
+    g : float or np.ndarray
+        Zwaartekrachtversnelling [kN/m^3].
+    gamma_water : float or np.ndarray
+        Dichtheid water (volumiek gewicht water) [kN/m^3].
+    r_c : float or np.ndarray
+        Reductiefactor [-].
+    v : float or np.ndarray
+        Kinematische viscositeit [m^2/s]
+    gamma_sp : float or np.ndarray
+        Volumieke dichtheid zand onder water [kN/m^3]
+    krit_verval_factor : float or np.ndarray
+        Vermenigvuldigingsfactor voor kritiek verval, by default 1.0.
+    m_p : float or np.ndarray
+        Modelfactor piping [-].
+    methode_stijghoogte : str
+        Stijghoogte methode, by default "responsfactor"
     """
 
     t_norm: float | np.ndarray = np.nan
