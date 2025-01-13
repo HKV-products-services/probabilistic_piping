@@ -1,6 +1,6 @@
 [project]
 name = "probabilistic_piping"
-version = "0.0.1"
+version = "0.0.4"
 description = "Python package for probabilistic piping calculations"
 channels = ["conda-forge"]
 platforms = ["win-64", "linux-64", "osx-64"]
