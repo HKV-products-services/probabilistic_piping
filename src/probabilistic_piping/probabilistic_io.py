@@ -34,6 +34,31 @@ class ProbInput:
     calc_options: dict[str, float | int | str] | None = None
     hlist: list[float] | None = None
 
+    @staticmethod
+    @validate_call
+    def _convert_str_to_num(val: float | int | str) -> float | int | str:
+        """
+        Convert a string to a number (float or int) if possible.
+
+        Parameters
+        ----------
+        value : float or int or str
+            The value to convert.
+
+        Returns
+        -------
+        float or int or str
+            The converted number if the string represents a number, otherwise the original string.
+        """
+        try:
+            val = float(val)
+            if int(val) == val:
+                val = int(val)
+        except ValueError:
+            pass
+
+        return val
+
     @classmethod
     @validate_call(config=dict(arbitrary_types_allowed=True))
     def from_dataframe(cls, df: pd.DataFrame) -> Self:
@@ -50,30 +75,46 @@ class ProbInput:
         ProbInput
             An instance of the ProbInput class.
         """
+        # Columns present in dataframe
+        df_cols = df.columns.tolist()
+
+        convert_to_num = [
+            "Mean",
+            "Spreiding",
+            "StDev",
+            "Verschuiving",
+            "Afknot_links",
+            "Afknot_rechts",
+        ]
+        for colname in convert_to_num:
+            if colname in df_cols:
+                df[colname] = pd.to_numeric(df[colname], errors="coerce")
+
         params, dist_params, charvals, calc_options = {}, {}, {}, {}
-        hlist = None
+        hlist = []
         for row in df.itertuples():
             var_type = row.Kansverdeling.lower().strip()
             var_name = row.Index
+            waarde = ProbInput._convert_str_to_num(row.Waarde)
             if var_name == "h":
-                # Voeg normwaterstand en lijst van waterstanden toe
-                charvals[var_name] = row.Waarde
-                hsteps = int((row.Max - row.Min) / row.Step) + 1
-                hlist = np.linspace(row.Min, row.Max, hsteps)
+                # Add characteristic waterlevel and make list of waterlevels.
+                charvals[var_name] = waarde
+                rmin, rmax, rstep = float(row.Min), float(row.Max), float(row.Step)
+                hsteps = int((rmax - rmin) / rstep) + 1
+                hlist = np.linspace(rmin, rmax, hsteps).tolist()
             elif var_type == "rekeninstelling":
-                # Sla waarde als rekeninstelling op
-                if not isinstance(row.Waarde, str) and int(row.Waarde) == row.Waarde:
-                    calc_options[var_name] = int(row.Waarde)
-                else:
-                    calc_options[var_name] = row.Waarde
+                # Save value als calculation setting
+                calc_options[var_name] = waarde
             elif var_type == "geen stochast":
-                # Geen stochast, deterministische waarde
-                params[var_name] = row.Waarde
+                # Not a stochastic variable, save as deterministic variable
+                params[var_name] = waarde
             else:
-                # Stochast
-                ProbInput.validate_stdev(
-                    var_name, row.Mean, row.Spreiding, row.Spreidingstype, row.StDev
-                )
+                # Validate spread, spread-type and standard deviation
+                if "Spreiding" in df_cols and "Spreidingstype" in df_cols:
+                    ProbInput.validate_stdev(
+                        var_name, row.Mean, row.Spreiding, row.Spreidingstype, row.StDev
+                    )
+                # Save stochast information
                 dist_params[var_name] = (
                     row.Kansverdeling,
                     row.Mean,
@@ -82,14 +123,17 @@ class ProbInput:
                     row.Afknot_links,
                     row.Afknot_rechts,
                 )
-                charvals[var_name] = row.Waarde
+                charvals[var_name] = waarde
 
-        # Sla informatie over variabelen op.
+        # Add water level if it wasn't present in the dataframe.
+        if "h" not in charvals:
+            charvals["h"] = np.nan
+
+        # Save information as dictionaries
         params = {k: v for k, v in params.items()}
         stochasts = {k: ProbInput.create_stochast(*v) for k, v in dist_params.items()}
         charvals = {k: v for k, v in charvals.items()}
         calc_options = {k: v for k, v in calc_options.items()}
-        hlist = hlist.tolist()
 
         return cls(params, stochasts, charvals, calc_options, hlist)
 
