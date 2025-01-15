@@ -27,6 +27,8 @@ quarto-render = { cmd = "export QUARTO_PYTHON=python && quarto render docs --to 
     "quartodoc-build",
 ] }
 docs = { depends-on = ["quarto-preview"] }
+pre-commit = "pre-commit run --all-files"
+
 
 [feature.common.dependencies]
 python = ">=3.11"
@@ -39,6 +41,7 @@ numpy ="*"
 openpyxl = ">=3.1.5"
 openturns = ">=1.23,<2"
 pandas ="*"
+pre-commit = "*"
 pytest ="*"
 pytest-cov = "*"
 quarto = ">=1.5.57"

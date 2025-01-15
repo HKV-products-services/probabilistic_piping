@@ -36,5 +36,5 @@ jobs:
       run: python -m build src
     - name: Publish package
       uses: pypa/gh-action-pypi-publish@release/v1
-      with: 
+      with:
         packages-dir: src/dist
