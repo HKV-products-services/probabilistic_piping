@@ -1,3 +1,5 @@
+__version__ = "0.0.5"
+
 from probabilistic_piping.piping_equations import PipingEquations
 from probabilistic_piping.piping_settings import PipingSettings
 from probabilistic_piping.probabilistic_base import ProbPipingBase, RelevantStochasts
