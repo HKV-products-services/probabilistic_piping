@@ -30,7 +30,8 @@ docs = { depends-on = ["quarto-preview"] }
 pre-commit = "pre-commit run --all-files"
 
 # Test
-pytest-cov = "pytest --cov --cov-report html:test/test_cov"
+#pytest-cov = "pytest --cov --cov-report html:test/test_cov"
+pytest-cov = "pytest --cov"
 
 [feature.common.dependencies]
 python = ">=3.11"
