@@ -24,4 +24,4 @@ jobs:
           pixi-version: "latest"
 
       - name: Run Pytests
-        run: pixi run pytest --cov
+        run: pixi run pytest-cov
