@@ -2,37 +2,19 @@
 
 This package contains core functionality for probabilistic piping calculations, utilizing [OpenTURNS](http://openturns.github.io), [pandas](https://pandas.pydata.org), [numpy](https://numpy.org) and [tqdm](https://tqdm.github.io). Probabilistic piping is developed by HKV and is published under the GNU GPL-3 license.
 
-## Getting started
 
-### Using install (in future)
+## Installing the package
+
+In case you just want to use the package, simply install the package from pypi:
 
 run `pip install probabilistic_piping`
 
-### developing with pixi
+## Setting up a development environment
 
-To manage the environment we use Pixi.
+In case you want to actively contribute to the source code, you need to set up a development environment. This can be done by installing [Pixi](https://pixi.sh/latest/).
 
-#### windows
-
-```powershell
-iwr -useb https://pixi.sh/install.ps1 | iex
-```
-
-#### Linux/Mac
+Once Pixi is installed, checkout the source code from the repository and run the  `pixi` command from the root of the source code:
 
 ```bash
-curl -fsSL https://pixi.sh/install.sh | bash
+  pixi install
 ```
-
-#### installing
-
-With the `Pixi` command in powershell install the python environment:
-
-```bash
- cd ..../probabilistic_piping
- pixi install
-```
-
-The `pixi.lock` file loads the correct packages and downloads to the `.pixi` file, you can use this environment in developing and resting.
-
-For questions about how to use this package contact `dupuits@hkv.nl`.
