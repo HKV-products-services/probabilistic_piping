@@ -356,7 +356,7 @@ class ProbResult:
         h: float,
         algo: ot.ProbabilitySimulationAlgorithm | ot.DirectionalSampling,
         otzfunc: ot.PythonFunction | ot.MemoizeFunction,
-        distribution: ot.ComposedDistribution,
+        distribution: ot.JointDistribution,
         result: ot.ProbabilitySimulationResult,
         z_type: str,
     ) -> Self:
@@ -371,7 +371,7 @@ class ProbResult:
             Simulation algorithm used in the analysis.
         otzfunc : ot.PythonFunction or ot.MemoizeFunction
             OpenTURNS Python function representing the limit state function.
-        distribution : ot.ComposedDistribution
+        distribution : ot.JointDistribution
             Distribution of the input variables.
         result : ot.OptimizationResult
             Result of the simulation analysis.

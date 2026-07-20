@@ -194,7 +194,7 @@ class ProbPipingBase(BaseModel):
         if rekentechniek == "Monte Carlo" or rekentechniek.startswith("DS "):
             otzfunc = ot.MemoizeFunction(otzfunc)
             otzfunc.clearHistory()
-        distribution = ot.ComposedDistribution(marginals, copula)
+        distribution = ot.JointDistribution(marginals, copula)
         distribution.setDescription(description)
 
         # Falen is equivalent met Z < 0
@@ -324,7 +324,7 @@ class ProbPipingBase(BaseModel):
 
     @staticmethod
     def get_FORM_startpoint(
-        distribution: ot.ComposedDistribution,
+        distribution: ot.JointDistribution,
         otzfunc: ot.PythonFunction,
         method="slice",
     ) -> list[float]:
@@ -333,7 +333,7 @@ class ProbPipingBase(BaseModel):
 
         Parameters
         ----------
-        distribution : ot.ComposedDistribution
+        distribution : ot.JointDistribution
             Distribution of the input variables.
         otzfunc : ot.PythonFunction
             OpenTURNS Python function representing the limit state function.
