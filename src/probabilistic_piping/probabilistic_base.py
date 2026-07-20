@@ -211,7 +211,8 @@ class ProbPipingBase(BaseModel):
             _, algoname = rekentechniek.split(" ")
             optimAlgo = getattr(ot, algoname)()
             self.set_calc_options(optimAlgo, prob_input.calc_options, self.debug)
-            algo = ot.FORM(optimAlgo, event, startpoint)
+            optimAlgo.setStartingPoint(startpoint)
+            algo = ot.FORM(optimAlgo, event)
             if algoname == "Cobyla":
                 max_iter = prob_input.calc_options["MaximumIterationNumber"]
             else:
