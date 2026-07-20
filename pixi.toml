@@ -49,6 +49,7 @@ pytest ="*"
 pytest-cov = "*"
 quarto = ">=1.5.57"
 quartodoc = ">=0.9.1"
+griffe = "<2"
 ruff = ">=0.8.1"
 tqdm = "*"
 
