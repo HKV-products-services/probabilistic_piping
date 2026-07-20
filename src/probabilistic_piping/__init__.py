@@ -1,4 +1,4 @@
-__version__ = "0.0.5"
+__version__ = "0.0.8"
 
 from probabilistic_piping.piping_equations import PipingEquations
 from probabilistic_piping.piping_settings import PipingSettings
