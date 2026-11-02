@@ -13300,4 +13300,5 @@ packages:
   - numpy
   - openturns>=1.23
   - pandas
+  - pydantic
   - tqdm

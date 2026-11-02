@@ -4,7 +4,7 @@ description = "Python package for probabilistic piping calculations"
 channels = ["conda-forge"]
 platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
 readme = "README.md"
-license = "GPL-3.0"
+license = "GPL-3.0-only"
 license-file = "LICENSE"
 
 [tasks]
@@ -44,6 +44,7 @@ openpyxl = ">=3.1.5"
 openturns = ">=1.27,<2"
 pandas ="*"
 pre-commit = "*"
+pydantic = "*"
 pytest ="*"
 pytest-cov = "*"
 quarto = ">=1.5.57"

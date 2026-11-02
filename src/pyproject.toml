@@ -13,7 +13,7 @@ name = "probabilistic_piping"
 dynamic = ["version"]
 description = "Python package for probabilistic piping calculations"
 readme = "README.md"
-license = {text = "GNU-GPL V3"}
+license = "GPL-3.0-only"
 authors = [
   { name = "Guy Dupuits"},
   { name = "Robin Nicolai"},
@@ -25,6 +25,7 @@ dependencies = [
   "numpy",
   "pandas",
   "openturns>=1.23",
+  "pydantic",
   "tqdm",
 ]
 
