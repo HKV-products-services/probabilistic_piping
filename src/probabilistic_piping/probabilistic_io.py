@@ -278,6 +278,14 @@ class ProbResult:
         Number of function evaluations.
     mechanism : str or None
         Type of the limit state function.
+    message : str or None
+        Explanation when the analysis needed recovery or found no failures,
+        otherwise None. A FORM result that is recovered from the solver error
+        keeps its values, but is not reliable when converged is False. A
+        constant limit state function can then give a probability of about 0.5
+        with Cobyla. A simulation without failures has prob_cond 0 and converged
+        False, and z_val, physical_design, standard_design and importancefactors
+        are None.
     """
 
     h: float | None = None
@@ -289,6 +297,7 @@ class ProbResult:
     importancefactors: dict[str, float] | None = None
     functionevals: int = 0
     mechanism: str | None = None
+    message: str | None = None
 
     @classmethod
     @validate_call(config=dict(arbitrary_types_allowed=True))
@@ -320,7 +329,8 @@ class ProbResult:
         beta = result.getHasoferReliabilityIndex()
         up = {k: p for k, p in zip(description, result.getStandardSpaceDesignPoint())}
         pp = {k: p for k, p in zip(description, result.getPhysicalSpaceDesignPoint())}
-        alphas = {k: -p / beta for k, p in up.items()}
+        # Bij beta 0 (ontwerppunt op het gemiddelde) zijn er geen alfa's
+        alphas = {k: -p / beta for k, p in up.items()} if beta != 0 else None
 
         # Op basis van de volgende pull request:
         #  - https://github.com/openturns/openturns/pull/2561
@@ -380,6 +390,16 @@ class ProbResult:
         """
         description = list(otzfunc.getInputDescription())
         pf = result.getProbabilityEstimate()
+        if pf == 0:
+            # Zonder falende samples is er geen ontwerppunt te bepalen
+            return cls(
+                h=h,
+                prob_cond=0.0,
+                converged=False,
+                functionevals=otzfunc.getEvaluationCallsNumber(),
+                mechanism=z_type,
+                message="Geen falende samples gevonden",
+            )
         beta = ot.Normal().computeInverseSurvivalFunction(pf)[0]
         converged = (
             result.getCoefficientOfVariation()

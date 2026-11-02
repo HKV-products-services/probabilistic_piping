@@ -2,10 +2,12 @@ import math
 from pathlib import Path
 
 import numpy as np
+import openturns as ot
 import pandas as pd
 import pytest
 
 from probabilistic_piping import (
+    PipingSettings,
     ProbInput,
     ProbPipingFixedWaterlevel,
     ProbPipingFixedWaterlevelSimple,
@@ -394,3 +396,139 @@ def test_cv_not_in_piping_settings():
     assert not hasattr(settings, "cv_vl")
     assert "cv_vl" not in PipingSettings.__doc__
     assert "cv_al" not in PipingSettings.__doc__
+
+
+# Solver failures
+FORM_AR = "FORM AbdoRackwitz"
+FORM_COBYLA = "FORM Cobyla"
+MONTE_CARLO = "Monte Carlo"
+DIRECTIONAL = "DS MediumSafe OrthogonalDirection"
+SIM_OPTIONS = {
+    MONTE_CARLO: {"BlockSize": 100, "MaximumOuterSampling": 2},
+    DIRECTIONAL: {"BlockSize": 10, "MaximumOuterSampling": 2},
+}
+
+
+def _prob_input(technique, **options):
+    inp = ProbInput.from_dataframe(_input_df())
+    inp.calc_options.update({"Rekentechniek": technique, **options})
+    return inp
+
+
+def _combi(technique, **options):
+    prob = ProbPipingFixedWaterlevel(progress=False)
+    return prob.fixed_waterlevel_failureprobability(
+        _prob_input(technique, **options), z_type="combi"
+    )[1]
+
+
+def _custom_z(z_func, technique, **options):
+    return _custom_z_input(z_func, _prob_input(technique, **options))
+
+
+def _custom_z_input(z_func, inp):
+    settings = PipingSettings()
+    settings.set_params_fromdict({**inp.params, "h": 5.0})
+    prob = ProbPipingFixedWaterlevel(progress=False)
+    return prob.prob_calculation(5.0, "heave", z_func, settings, inp)[1]
+
+
+def _constant_z(value):
+    return lambda s: (
+        value * np.ones(np.shape(s.h_exit)) if np.ndim(s.h_exit) else float(value)
+    )
+
+
+def _failing_z(s):
+    raise ValueError("fout in z")
+
+
+@pytest.mark.parametrize("technique", [FORM_AR, FORM_COBYLA])
+def test_solver_failure_raises_the_real_error(technique):
+    with pytest.raises(RuntimeError) as error:
+        _combi(technique, MaximumCallsNumber=3)
+    assert "NotYetImplemented" not in str(error.value)
+
+
+@pytest.mark.parametrize("start", ["mean", "slice"])
+def test_zero_gradient_raises_the_real_error(start):
+    with pytest.raises(RuntimeError, match="gradient"):
+        _custom_z(_constant_z(1.0), FORM_AR, **{"FORM start": start})
+
+
+def test_residual_recovery_keeps_values_and_adds_message():
+    result = _combi(FORM_AR, MaximumIterationNumber=1)
+    assert 0 < result.prob_cond < 1
+    assert not result.converged
+    assert "not on the limit state" in result.message
+    assert result.physical_design is not None
+    assert result.importancefactors is not None
+
+
+@pytest.mark.parametrize("technique", [FORM_AR, FORM_COBYLA, MONTE_CARLO, DIRECTIONAL])
+def test_error_in_z_raises_original_error(technique):
+    with pytest.raises(ValueError, match="fout in z"):
+        _custom_z(_failing_z, technique, **SIM_OPTIONS.get(technique, {}))
+
+
+def test_error_in_z_raises_original_error_from_slice_start():
+    with pytest.raises(ValueError, match="fout in z"):
+        _custom_z(_failing_z, FORM_AR, **{"FORM start": "slice"})
+
+
+@pytest.mark.parametrize("technique", [FORM_AR, FORM_COBYLA, MONTE_CARLO])
+def test_unknown_stijghoogte_method_raises_value_error(technique):
+    inp = ProbInput.from_dataframe(_input_df("onbekende_methode"))
+    inp.calc_options.update({"Rekentechniek": technique})
+    inp.calc_options.update(SIM_OPTIONS.get(technique, {}))
+    prob = ProbPipingFixedWaterlevel(progress=False)
+    with pytest.raises(ValueError):
+        prob.fixed_waterlevel_failureprobability(inp, z_type="heave")
+
+
+def test_design_point_on_the_mean_has_no_importancefactors():
+    result = _custom_z(lambda s: s.h_exit + 1.5, FORM_AR)
+    assert np.isclose(result.prob_cond, 0.5)
+    assert result.importancefactors is None
+    assert result.physical_design is not None
+
+
+@pytest.mark.parametrize("technique", [MONTE_CARLO, DIRECTIONAL])
+def test_simulation_without_failures(technique):
+    result = _custom_z(_constant_z(1.0), technique, **SIM_OPTIONS[technique])
+    assert result.prob_cond == 0
+    assert not result.converged
+    assert result.message
+    assert result.z_val is None
+    assert result.physical_design is None
+    assert result.standard_design is None
+    assert result.importancefactors is None
+
+
+@pytest.mark.parametrize("technique", [MONTE_CARLO, DIRECTIONAL])
+def test_simulation_with_only_failures(technique):
+    result = _custom_z(_constant_z(-1.0), technique, **SIM_OPTIONS[technique])
+    assert result.prob_cond == 1
+    assert result.physical_design is not None
+    assert result.message is None
+
+
+@pytest.mark.parametrize("technique", [FORM_AR, FORM_COBYLA])
+def test_normal_run_has_no_message(technique):
+    assert _combi(technique).message is None
+
+
+@pytest.mark.parametrize("technique", [MONTE_CARLO, DIRECTIONAL])
+def test_normal_simulation_has_no_message(technique):
+    ot.RandomGenerator.SetSeed(1)
+    result = _custom_z(lambda s: s.h_exit + 1.5, technique, **SIM_OPTIONS[technique])
+    assert 0 < result.prob_cond < 1
+    assert result.message is None
+
+
+def test_solver_failure_stops_a_fragilitycurve():
+    prob = ProbPipingFixedWaterlevel(progress=False)
+    inp = _prob_input(FORM_AR, MaximumCallsNumber=12)
+    with pytest.raises(RuntimeError) as error:
+        prob.fixed_waterlevel_fragilitycurve(inp, hlist=[0.0, 2.0, 4.0, 6.0])
+    assert "NotYetImplemented" not in str(error.value)

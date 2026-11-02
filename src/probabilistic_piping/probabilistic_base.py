@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from dataclasses import field
 from typing import Callable
 
@@ -189,10 +190,34 @@ class ProbPipingBase(BaseModel):
         marginals = list(subset_stochasten.values())
         rekentechniek = prob_input.calc_options["Rekentechniek"]
 
+        # OpenTURNS geeft een fout in de z-functie door als RuntimeError, net als
+        # een mislukte solver. Bewaar daarom de originele fout, zodat die na een
+        # mislukte solver aanroep opnieuw gegeven kan worden.
+        z_errors = []
+
+        def z_func_checked(zsettings: PipingSettings) -> np.ndarray | float:
+            try:
+                return z_func(zsettings)
+            except Exception as e:
+                z_errors.append(e)
+                raise
+
+        def raise_z_error() -> None:
+            if z_errors:
+                raise z_errors[0] from None
+
+        @contextmanager
+        def original_z_error():
+            try:
+                yield
+            except Exception:
+                raise_z_error()
+                raise
+
         def z_func_sample(X: np.ndarray) -> list[float]:
             zsettings = settings.copy()
             zsettings.set_params_fromdict({k: v for k, v in zip(description, X)})
-            zval = z_func(zsettings)
+            zval = z_func_checked(zsettings)
             return [zval]
 
         def z_func_vecsample(X: np.ndarray) -> np.ndarray:
@@ -204,7 +229,7 @@ class ProbPipingBase(BaseModel):
                 zsettings.set_params_fromdict(
                     {k: X[:, i] for i, k in enumerate(description)}
                 )
-                zval = z_func(zsettings)
+                zval = z_func_checked(zsettings)
             return zval[:, np.newaxis]
 
         if copula is None:
@@ -227,9 +252,10 @@ class ProbPipingBase(BaseModel):
 
         if rekentechniek.startswith("FORM"):
             startmethod = prob_input.calc_options["FORM start"]
-            startpoint = self.get_FORM_startpoint(
-                distribution, otzfunc, method=startmethod
-            )
+            with original_z_error():
+                startpoint = self.get_FORM_startpoint(
+                    distribution, otzfunc, method=startmethod
+                )
             _, algoname = rekentechniek.split(" ")
             optimAlgo = getattr(ot, algoname)()
             self.set_calc_options(optimAlgo, prob_input.calc_options, self.debug)
@@ -253,24 +279,33 @@ class ProbPipingBase(BaseModel):
                 # Wordt vanaf openturns 1.23 een error gegeneerd op:
                 #  - residual <= 1.1 * limitStateTolerance
                 # Vang deze error af en los dit later op in de resultaten.
+                message = None
                 try:
                     algo.run()
                     result = algo.getResult()
                 except Exception as e:
+                    # Een fout in de z-functie is geen solver fout
+                    raise_z_error()
                     if self.debug:
                         print(f"Error: {e}")
-                    result = ot.FORMResult(
-                        algo.getAnalyticalResult().getStandardSpaceDesignPoint(),
-                        algo.getAnalyticalResult().getLimitStateVariable(),
-                        algo.getAnalyticalResult().getIsStandardPointOriginInFailureSpace(),
-                    )
-                    result.setOptimizationResult(
-                        algo.getAnalyticalResult().getOptimizationResult()
-                    )
+                    message = str(e)
+                    try:
+                        result = ot.FORMResult(
+                            algo.getAnalyticalResult().getStandardSpaceDesignPoint(),
+                            algo.getAnalyticalResult().getLimitStateVariable(),
+                            algo.getAnalyticalResult().getIsStandardPointOriginInFailureSpace(),
+                        )
+                        result.setOptimizationResult(
+                            algo.getAnalyticalResult().getOptimizationResult()
+                        )
+                    except Exception:
+                        # Niets om te herstellen, geef de fout van de solver door
+                        raise e from None
 
             prob_result = ProbResult.from_FORM_result(
                 h, optimAlgo, otzfunc, result, z_type
             )
+            prob_result.message = message
         elif rekentechniek == "Monte Carlo":
             experiment = ot.MonteCarloExperiment()
             algo = ot.ProbabilitySimulationAlgorithm(event, experiment)
@@ -284,7 +319,8 @@ class ProbPipingBase(BaseModel):
             ) as pbar:
                 set_pbar = lambda _: pbar.update(algo.getBlockSize())  # noqa: E731
                 algo.setProgressCallback(set_pbar)
-                algo.run()
+                with original_z_error():
+                    algo.run()
             result = algo.getResult()
             prob_result = ProbResult.from_sim_result(
                 h, algo, otzfunc, distribution, result, z_type
@@ -303,7 +339,8 @@ class ProbPipingBase(BaseModel):
             ) as pbar:
                 set_pbar = lambda _: pbar.update(algo.getBlockSize())  # noqa: E731
                 algo.setProgressCallback(set_pbar)
-                algo.run()
+                with original_z_error():
+                    algo.run()
             result = algo.getResult()
             prob_result = ProbResult.from_sim_result(
                 h, algo, otzfunc, distribution, result, z_type
