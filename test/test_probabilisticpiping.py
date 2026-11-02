@@ -308,3 +308,89 @@ def test_stijghoogte_TRWD_4A_stochasts_do_not_change_responsfactor(z_type):
         if name not in ["k", "D"]:
             _add_stochast(df, name, val)
     assert _failureprobability(df, z_type) == _failureprobability(base, z_type)
+
+
+def _simple_pf(df):
+    prob = ProbPipingFixedWaterlevelSimple(progress=False)
+    _, ru, rh, _, _ = prob.fixed_waterlevel_failureprobability(
+        ProbInput.from_dataframe(df)
+    )
+    return ru.prob_cond, rh.prob_cond
+
+
+@pytest.mark.parametrize("name", ["cv_al", "cv_vl", "no_such_setting"])
+@pytest.mark.parametrize("as_stochast", [False, True])
+def test_rows_that_are_not_settings_are_ignored(name, as_stochast):
+    base = _input_df()
+    df = _input_df()
+    if as_stochast:
+        _add_stochast(df, name, 1e-6)
+    else:
+        df.loc[name, "Kansverdeling"] = "geen stochast"
+        df.loc[name, "Waarde"] = 1e-6
+
+    pd.testing.assert_series_equal(_semiprob(df), _semiprob(base), check_exact=True)
+    for z_type in ["uplift", "heave", "combi"]:
+        assert _failureprobability(df, z_type) == _failureprobability(base, z_type)
+    assert _simple_pf(df) == _simple_pf(base)
+
+
+def _stochast_range(df, name):
+    dist = ProbInput.from_dataframe(df).stochasts[name]
+    rng = dist.getRange()
+    return rng.getLowerBound()[0], rng.getUpperBound()[0]
+
+
+def _design_r_exit(df):
+    prob = ProbPipingFixedWaterlevel(progress=False)
+    _, result = prob.fixed_waterlevel_failureprobability(
+        ProbInput.from_dataframe(df), z_type="heave"
+    )
+    return result.physical_design["r_exit"]
+
+
+def _truncated_r_exit(left=np.nan, right=np.nan):
+    df = _input_df()
+    df.loc["r_exit", ["Afknot_links", "Afknot_rechts"]] = [left, right]
+    return df
+
+
+def test_two_sided_truncation_from_input_table():
+    mean, sd = 0.8, 0.08
+    left, right = mean - sd, mean + 1.5 * sd
+    assert _design_r_exit(_truncated_r_exit()) < left
+
+    df = _truncated_r_exit(left, right)
+    lower, upper = _stochast_range(df, "r_exit")
+    assert np.isclose(lower, left)
+    assert np.isclose(upper, right)
+    assert left <= _design_r_exit(df) <= right
+
+
+def test_no_and_one_sided_truncation_ranges():
+    lower, upper = _stochast_range(_truncated_r_exit(), "r_exit")
+    assert lower < 0.8 - 5 * 0.08
+    assert upper > 0.8 + 5 * 0.08
+
+    lower, upper = _stochast_range(_truncated_r_exit(left=0.7), "r_exit")
+    assert np.isclose(lower, 0.7)
+    assert upper > 0.8 + 5 * 0.08
+
+    lower, upper = _stochast_range(_truncated_r_exit(right=0.9), "r_exit")
+    assert lower < 0.8 - 5 * 0.08
+    assert np.isclose(upper, 0.9)
+
+
+def test_truncation_left_above_right_raises():
+    with pytest.raises(TypeError):
+        ProbInput.from_dataframe(_truncated_r_exit(0.9, 0.7))
+
+
+def test_cv_not_in_piping_settings():
+    from probabilistic_piping import PipingSettings
+
+    settings = PipingSettings(cv_al=1e-6)
+    assert not hasattr(settings, "cv_al")
+    assert not hasattr(settings, "cv_vl")
+    assert "cv_vl" not in PipingSettings.__doc__
+    assert "cv_al" not in PipingSettings.__doc__

@@ -241,7 +241,7 @@ class ProbInput:
             raise ValueError(f"Onbekende verdeling {dist_type}")
 
         if not np.isnan(afknot_l) and not np.isnan(afknot_r):
-            dist = ot.TruncatedDistribution(dist, afknot_l, afknot_l)
+            dist = ot.TruncatedDistribution(dist, afknot_l, afknot_r)
         elif not np.isnan(afknot_l):
             dist = ot.TruncatedDistribution(
                 dist, afknot_l, ot.TruncatedDistribution.LOWER

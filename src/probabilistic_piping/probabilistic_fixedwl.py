@@ -118,10 +118,13 @@ class ProbPipingFixedWaterlevelBase(ProbPipingBase):
 
         # Maak een pandas object aan met de waardes voor de relevante parameters
         result = {}
+        # Rijen die geen instelling zijn (bijv. oude invoer) worden overgeslagen
         for k in prob_input.charvals:
-            result[k] = getattr(settings, k)
+            if hasattr(settings, k):
+                result[k] = getattr(settings, k)
         for k in prob_input.params:
-            result[k] = getattr(settings, k)
+            if hasattr(settings, k):
+                result[k] = getattr(settings, k)
         result["Hc"] = Hc
         result["phi_exit"] = phi_exit
         result["delta_phi_cu"] = delta_phi_cu

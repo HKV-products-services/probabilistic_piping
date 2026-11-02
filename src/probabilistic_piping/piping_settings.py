@@ -31,10 +31,6 @@ class PipingSettings:
         Doorlatendheid voorland [m/s].
     k_al : float or np.ndarray
         Doorlatendheid achterland [m/s].
-    cv_vl : float or np.ndarray
-        consolidatiecoëfficiënt klei voorland [m^2/s].
-    cv_al : float or np.ndarray
-        consolidatiecoëfficiënt klei achterland [m^2/s].
     b : float or np.ndarray
         b-waarde in TRWD model 4D (halve breedte rivierbed) [m]
     n_aq : float or np.ndarray
@@ -96,8 +92,6 @@ class PipingSettings:
     k: float | np.ndarray = np.nan
     k_vl: float | np.ndarray = np.nan
     k_al: float | np.ndarray = np.nan
-    cv_vl: float | np.ndarray = np.nan
-    cv_al: float | np.ndarray = np.nan
     b: float | np.ndarray = np.nan
     n_aq: float | np.ndarray = np.nan
     L: float | np.ndarray = np.nan
