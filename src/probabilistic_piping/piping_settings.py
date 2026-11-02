@@ -41,6 +41,8 @@ class PipingSettings:
         Porositeit van de aquifer [-].
     L : float or np.ndarray
         Kwelweglengte [m].
+    L_dijkbasis : float or np.ndarray
+        Lengte dijkbasis, onderdeel van de kwelweg bij TRWD model 4A [m].
     L_vl : float or np.ndarray
         Lengte voorland [m].
     L_al : float or np.ndarray
@@ -76,7 +78,12 @@ class PipingSettings:
     m_p : float or np.ndarray
         Modelfactor piping [-].
     methode_stijghoogte : str
-        Stijghoogte methode, by default "responsfactor"
+        Stijghoogte methode ("responsfactor", "responsfactor_phi_gem" of
+        "TRWD_4A"), by default "responsfactor"
+    phi_gem : float or np.ndarray
+        Gemiddelde stijghoogte bij het uittredepunt, bij "responsfactor_phi_gem" [m+NAP].
+    h_gem : float or np.ndarray
+        Gemiddelde buitenwaterstand, bij "responsfactor_phi_gem" [m+NAP].
     """
 
     t_norm: float | np.ndarray = np.nan
@@ -94,6 +101,7 @@ class PipingSettings:
     b: float | np.ndarray = np.nan
     n_aq: float | np.ndarray = np.nan
     L: float | np.ndarray = np.nan
+    L_dijkbasis: float | np.ndarray = np.nan
     L_vl: float | np.ndarray = np.nan
     L_al: float | np.ndarray = np.nan
     gamma_sat: float | np.ndarray = np.nan
@@ -112,6 +120,8 @@ class PipingSettings:
     krit_verval_factor: float | np.ndarray = 1.0
     m_p: float | np.ndarray = np.nan
     methode_stijghoogte: str = "responsfactor"
+    phi_gem: float | np.ndarray = np.nan
+    h_gem: float | np.ndarray = np.nan
 
     def __post_init__(self) -> None:
         """

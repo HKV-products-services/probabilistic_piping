@@ -1,6 +1,11 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import numpy as np
 
-from probabilistic_piping.piping_settings import PipingSettings
+if TYPE_CHECKING:
+    from probabilistic_piping.piping_settings import PipingSettings
 
 
 class PipingEquations:
@@ -511,3 +516,109 @@ class PipingEquations:
             Stijghoogte bij het uittredepunt.
         """
         return cls.stijghoogte(settings.h_exit, settings.r_exit, waterstand)
+
+    @classmethod
+    def stijghoogte_responsfactor_phi_gem(
+        cls, waterstand: float | np.ndarray, settings: PipingSettings
+    ) -> float | np.ndarray:
+        """
+        Stijghoogte in de watervoerende laag bij het uittredepunt, uitgaande van
+        een gemiddelde stijghoogte bij een gemiddelde buitenwaterstand.
+
+        Parameters
+        ----------
+        waterstand : float or np.ndarray
+            Buitenwaterstand [m+NAP].
+        settings : PipingSettings
+            Instellingen voor piping berekeningen.
+
+        Returns
+        -------
+        float or np.ndarray
+            Stijghoogte bij het uittredepunt.
+        """
+        return settings.phi_gem + settings.r_exit * (waterstand - settings.h_gem)
+
+    @classmethod
+    def stijghoogte_TRWD_4A(
+        cls, waterstand: float | np.ndarray, settings: PipingSettings
+    ) -> float | np.ndarray:
+        """
+        Stijghoogte in de watervoerende laag bij het uittredepunt, waarbij de
+        dempingsfactor volgt uit TRWD model 4A (voorland, dijkbasis en achterland).
+
+        Parameters
+        ----------
+        waterstand : float or np.ndarray
+            Buitenwaterstand [m+NAP].
+        settings : PipingSettings
+            Instellingen voor piping berekeningen.
+
+        Returns
+        -------
+        float or np.ndarray
+            Stijghoogte bij het uittredepunt.
+        """
+        lambda_vl = np.sqrt(settings.k * settings.D * settings.D_vl / settings.k_vl)
+        lambda_al = np.sqrt(settings.k * settings.D * settings.D_al / settings.k_al)
+        tanh_vl = np.tanh(settings.L_vl / lambda_vl)
+        tanh_al = np.tanh(settings.L_al / lambda_al)
+        r_exit = (lambda_al * tanh_al) / (
+            lambda_vl * tanh_vl + settings.L_dijkbasis + lambda_al * tanh_al
+        )
+
+        return cls.stijghoogte(settings.h_exit, r_exit, waterstand)
+
+    @classmethod
+    def check_stijghoogte(
+        cls, settings: PipingSettings, stochasts: set[str] = frozenset()
+    ) -> None:
+        """
+        Controleer of de invoer van de gekozen stijghoogte methode geldig is.
+
+        Alleen de invoer die de gekozen methode nodig heeft wordt gecontroleerd.
+        Variabelen in `stochasts` worden overgeslagen, omdat deze per sample
+        worden ingevuld. Bij TRWD_4A mogen de lengtes niet allemaal nul zijn.
+
+        Parameters
+        ----------
+        settings : PipingSettings
+            Instellingen voor piping berekeningen.
+        stochasts : set of str, optional
+            Namen van variabelen die als stochast worden doorgerekend, by default leeg.
+
+        Raises
+        ------
+        ValueError
+            Als een benodigde variabele NaN is, of nul terwijl dat niet is toegestaan.
+        """
+        if settings.methode_stijghoogte == "responsfactor_phi_gem":
+            nonzero, zero_ok = [], ["phi_gem", "h_gem", "r_exit"]
+        elif settings.methode_stijghoogte == "TRWD_4A":
+            nonzero = ["k", "D", "D_vl", "D_al", "k_vl", "k_al"]
+            zero_ok = ["L_vl", "L_al", "L_dijkbasis"]
+        else:
+            return
+
+        for name in nonzero + zero_ok:
+            if name in stochasts:
+                continue
+            val = np.asarray(getattr(settings, name), dtype=float)
+            if np.isnan(val).any():
+                raise ValueError(
+                    f"'{name}' is NaN, maar is nodig voor {settings.methode_stijghoogte=}"
+                )
+            if name in nonzero and (val == 0).any():
+                raise ValueError(
+                    f"'{name}' is nul, maar mag niet nul zijn voor {settings.methode_stijghoogte=}"
+                )
+
+        lengths = ["L_vl", "L_al", "L_dijkbasis"]
+        if settings.methode_stijghoogte == "TRWD_4A" and not stochasts.intersection(
+            lengths
+        ):
+            if all((np.asarray(getattr(settings, n)) == 0).all() for n in lengths):
+                raise ValueError(
+                    "'L_vl', 'L_al' en 'L_dijkbasis' zijn alle drie nul voor "
+                    f"{settings.methode_stijghoogte=}"
+                )

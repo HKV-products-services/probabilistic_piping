@@ -74,6 +74,7 @@ class ProbPipingFixedWaterlevelBase(ProbPipingBase):
         if h is not None:
             settings_dict["h"] = h
         settings.set_params_fromdict(settings_dict)
+        self.piping_eq.check_stijghoogte(settings)
 
         # bereken veiligheidsfactoren voor de deelmechanismes
         Hc = self.piping_eq.H_c(settings)
@@ -262,6 +263,7 @@ class ProbPipingFixedWaterlevelSimple(ProbPipingFixedWaterlevelBase):
             settings_dict = {**prob_input.params}
         settings_dict["h"] = h
         settings.set_params_fromdict(settings_dict)
+        self.piping_eq.check_stijghoogte(settings, set(prob_input.stochasts))
 
         _, result_u = self.prob_calculation(
             h,
@@ -436,6 +438,10 @@ class ProbPipingFixedWaterlevel(ProbPipingFixedWaterlevelBase):
             raise ValueError(
                 f"Argument z_type is niet 'sellmeijer', 'heave', 'uplift' of 'combi' ('{z_type}')"
             )
+
+        # Sellmeijer gebruikt de stijghoogte niet
+        if z_type != "sellmeijer":
+            self.piping_eq.check_stijghoogte(settings, set(prob_input.stochasts))
 
         # Bepaal faalkans
         settings, results = self.prob_calculation(

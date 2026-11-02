@@ -29,6 +29,9 @@ class RelevantStochasts:
         Stochastic variables relevant for Sellmeijer analysis.
     combi : list of str
         Combined stochastic variables for combined analyses.
+    TRWD_4A : list of str
+        Stochastic variables that are also used by uplift, heave and combi
+        when methode_stijghoogte is "TRWD_4A".
     """
 
     algemeen: list[str] = field(
@@ -92,6 +95,19 @@ class RelevantStochasts:
             "L",
             "m_p",
             "theta",
+        ]
+    )
+    TRWD_4A: list[str] = field(
+        default_factory=lambda: [
+            "k",
+            "D",
+            "L_dijkbasis",
+            "L_vl",
+            "L_al",
+            "D_vl",
+            "D_al",
+            "k_vl",
+            "k_al",
         ]
     )
 
@@ -161,6 +177,12 @@ class ProbPipingBase(BaseModel):
             if sname in self.rel_stochasts.algemeen:
                 subset_stochasten[sname] = stochast
             elif sname in getattr(self.rel_stochasts, z_type):
+                subset_stochasten[sname] = stochast
+            elif (
+                sname in self.rel_stochasts.TRWD_4A
+                and z_type != "sellmeijer"
+                and settings.methode_stijghoogte == "TRWD_4A"
+            ):
                 subset_stochasten[sname] = stochast
 
         description = list(subset_stochasten.keys())
