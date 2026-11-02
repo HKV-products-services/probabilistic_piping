@@ -37,9 +37,9 @@ jobs:
         pip install build
 
     - name: Build package
-      run: python -m build src
+      run: python -m build
 
     - name: Publish package
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
-        packages-dir: src/dist
+        packages-dir: dist

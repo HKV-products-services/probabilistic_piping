@@ -14,7 +14,7 @@ updates:
           - "*"
 
   - package-ecosystem: "pip"
-    directory: "/src"
+    directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"

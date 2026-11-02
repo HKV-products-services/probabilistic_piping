@@ -22,7 +22,7 @@ jobs:
 
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
-          manifest-path: probabilistic_piping/pixi.toml
+          manifest-path: probabilistic_piping/pyproject.toml
           pixi-version: "latest"
 
       - name: Ruff Lint

@@ -1,13 +1,47 @@
-[workspace]
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "src/probabilistic_piping/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/probabilistic_piping"]
+
+# Only the package goes in the sdist, not the other folders in the repo root
+[tool.hatch.build.targets.sdist]
+include = ["src/probabilistic_piping", "src/README.md", "LICENSE"]
+
+[project]
 name = "probabilistic_piping"
+dynamic = ["version"]
 description = "Python package for probabilistic piping calculations"
+readme = "src/README.md"
+license = "GPL-3.0-only"
+authors = [
+  { name = "Guy Dupuits"},
+  { name = "Robin Nicolai"},
+  { name = "Joost Pol"},
+  { name = "David Haasnoot"},
+]
+
+dependencies = [
+  "numpy",
+  "pandas",
+  "openturns>=1.23",
+  "pydantic",
+  "tqdm",
+]
+
+[project.urls]
+Documentation = "https://hkv-products-services.github.io/probabilistic_piping"
+Source = "https://github.com/HKV-products-services/probabilistic_piping"
+
+[tool.pixi.workspace]
 channels = ["conda-forge"]
 platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
-readme = "README.md"
-license = "GPL-3.0-only"
-license-file = "LICENSE"
 
-[tasks]
+[tool.pixi.tasks]
 # Installation
 install = "pre-commit install"
 
@@ -32,7 +66,7 @@ pre-commit = "pre-commit run --all-files"
 #pytest-cov = "pytest --cov --cov-report html:test/test_cov"
 pytest-cov = "pytest --cov"
 
-[feature.common.dependencies]
+[tool.pixi.feature.common.dependencies]
 python = ">=3.11"
 ipykernel ="*"
 ipywidgets ="*"
@@ -53,8 +87,8 @@ griffe = "<2"
 ruff = ">=0.8.1"
 tqdm = "*"
 
-[feature.common.pypi-dependencies]
-probabilistic_piping = { path = "src", editable = true }
+[tool.pixi.feature.common.pypi-dependencies]
+probabilistic_piping = { path = ".", editable = true }
 
-[environments]
+[tool.pixi.environments]
 default = { features = ["common"] }
