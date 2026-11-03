@@ -30,9 +30,12 @@ class RelevantStochasts:
         Stochastic variables relevant for Sellmeijer analysis.
     combi : list of str
         Combined stochastic variables for combined analyses.
+    timedep_piping : list of str
+        Stochastic variables for timedep analyses: combi plus the variables
+        of pipe growth.
     TRWD_4A : list of str
-        Stochastic variables that are also used by uplift, heave and combi
-        when methode_stijghoogte is "TRWD_4A".
+        Stochastic variables that are also used by uplift, heave, combi and
+        timedep_piping when methode_stijghoogte is "TRWD_4A".
     """
 
     algemeen: list[str] = field(
@@ -96,6 +99,33 @@ class RelevantStochasts:
             "L",
             "m_p",
             "theta",
+        ]
+    )
+    timedep_piping: list[str] = field(
+        default_factory=lambda: [
+            "D_cover",
+            "gamma_sat",
+            "h_exit",
+            "m_u",
+            "r_exit",
+            "phi_gem",
+            "h_gem",
+            "i_ch",
+            "D",
+            "d_70",
+            "eta",
+            "k",
+            "L",
+            "m_p",
+            "theta",
+            "n_aq",
+            "l_ini",
+            "dldt_constant",
+            "dldt_Ce",
+            "dldt_kezdi_C",
+            "dldt_kezdi_mv",
+            "detect_true",
+            "intervention_hours",
         ]
     )
     TRWD_4A: list[str] = field(

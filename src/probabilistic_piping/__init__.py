@@ -8,6 +8,7 @@ from probabilistic_piping.probabilistic_fixedwl import (
     ProbPipingFixedWaterlevelSimple,
 )
 from probabilistic_piping.probabilistic_io import ProbInput, ProbResult
+from probabilistic_piping.probabilistic_timedep import ProbPipingTimeDepWaterlevel
 
 __all__ = [
     "PipingEquations",
@@ -18,4 +19,5 @@ __all__ = [
     "ProbInput",
     "ProbPipingFixedWaterlevel",
     "ProbPipingFixedWaterlevelSimple",
+    "ProbPipingTimeDepWaterlevel",
 ]

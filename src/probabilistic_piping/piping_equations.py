@@ -1,11 +1,52 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import math
+from typing import TYPE_CHECKING, NamedTuple
 
 import numpy as np
 
 if TYPE_CHECKING:
     from probabilistic_piping.piping_settings import PipingSettings
+
+
+class PipeGrowth(NamedTuple):
+    """
+    Resultaat van de pipelengteontwikkeling, met een waarde per sample.
+
+    Attributes
+    ----------
+    l_end : np.ndarray
+        Pipelengte aan het einde van de reeks [m].
+    l_time : list of np.ndarray
+        Pipelengte over de tijd per sample [m], vorm n x 1.
+    dldt_avg : np.ndarray
+        Gemiddelde groeisnelheid tijdens groei [m/s].
+    dldt_end : np.ndarray
+        Groeisnelheid aan het einde van de reeks [m/s].
+    t_uplift : np.ndarray
+        Tijdstip van opbarsten [uur].
+    t_heave : np.ndarray
+        Tijdstip van heave [uur].
+    t_sell : np.ndarray
+        Tijdstip waarop het kritieke verval wordt overschreden [uur].
+    t_first_erosion : np.ndarray
+        Tijdstip van het begin van het uitspoelen van zand [uur].
+    t_intervention : np.ndarray
+        Tijdstip van interventie [uur].
+    t_fail : np.ndarray
+        Tijdstip van falen [uur].
+    """
+
+    l_end: np.ndarray
+    l_time: list[np.ndarray]
+    dldt_avg: np.ndarray
+    dldt_end: np.ndarray
+    t_uplift: np.ndarray
+    t_heave: np.ndarray
+    t_sell: np.ndarray
+    t_first_erosion: np.ndarray
+    t_intervention: np.ndarray
+    t_fail: np.ndarray
 
 
 class PipingEquations:
@@ -622,3 +663,486 @@ class PipingEquations:
                     "'L_vl', 'L_al' en 'L_dijkbasis' zijn alle drie nul voor "
                     f"{settings.methode_stijghoogte=}"
                 )
+
+    @staticmethod
+    def pipe_lengte_kritiek(settings: PipingSettings) -> float | np.ndarray:
+        """
+        Kritieke pipelengte behorend bij het kritieke verval.
+
+        Parameters
+        ----------
+        settings : PipingSettings
+            Instellingen voor piping berekeningen.
+
+        Returns
+        -------
+        float or np.ndarray
+            Kritieke pipelengte [m].
+        """
+        return settings.L * 0.5 * np.tanh(2 * settings.D / settings.L)
+
+    @staticmethod
+    def inextrp1d(x: np.ndarray, xp: np.ndarray, fp: np.ndarray) -> np.ndarray:
+        """
+        Lineair inter- en extrapoleren van een 1D array.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Posities waarop wordt geinterpoleerd.
+        xp : np.ndarray
+            Posities van de bekende waarden, oplopend.
+        fp : np.ndarray
+            Bekende waarden op de posities xp.
+
+        Returns
+        -------
+        np.ndarray
+            Geinterpoleerde waarden.
+        """
+        # Bepaal de ondergrens
+        intidx = np.minimum(np.maximum(0, np.searchsorted(xp, x) - 1), len(xp) - 2)
+        # Bepaal de interpolatiefractie
+        denom = xp[intidx + 1] - xp[intidx]
+        # Nul wordt een zeer klein getal, zodat staptijden werken
+        denom[denom == 0] = 1e-16
+        fracs = (x - xp[intidx]) / denom
+        # Interpoleer (1-frac) * f_low + frac * f_up
+        f = (1 - fracs) * fp[intidx] + fp[intidx + 1] * fracs
+
+        return f
+
+    @staticmethod
+    def H_equilibrium(
+        Hc: float | np.ndarray,
+        lc: float | np.ndarray,
+        l_pipe: float | np.ndarray,
+        settings: PipingSettings,
+    ) -> float | np.ndarray:
+        """
+        Evenwichtsverval behorend bij de pipelengte.
+
+        Parameters
+        ----------
+        Hc : float or np.ndarray
+            Kritiek verval [m].
+        lc : float or np.ndarray
+            Kritieke pipelengte [m].
+        l_pipe : float or np.ndarray
+            Pipelengte [m].
+        settings : PipingSettings
+            Instellingen voor piping berekeningen.
+
+        Returns
+        -------
+        float or np.ndarray
+            Evenwichtsverval [m].
+        """
+        lc = np.atleast_1d(lc)
+        l_pipe = np.atleast_1d(l_pipe)
+        L = np.atleast_1d(settings.L)
+        Hc = np.atleast_1d(Hc)
+        m_p = np.atleast_1d(settings.m_p)
+        Heq = np.empty_like(Hc, dtype=np.float64)
+        for i in range(len(L)):
+            Heq[i] = PipingEquations._H_equilibrium(
+                m_p[i] * Hc[i], lc[i], l_pipe[i], L[i]
+            )
+
+        if np.ndim(settings.L) == 0:
+            Heq = Heq[0]
+
+        return Heq
+
+    @staticmethod
+    def _H_equilibrium(Hc: float, lc: float, l_pipe: float, L: float) -> float:
+        """
+        Evenwichtsverval voor een enkele waarde, inclusief modelfactor in Hc.
+
+        Lineaire inter- en extrapolatie door (0, 0), (lc, Hc) en (L, 0.9 * Hc).
+        """
+        if l_pipe <= lc:
+            l_low, l_up, Heq_low, Heq_up = 0.0, lc, 0.0, Hc
+        else:
+            l_low, l_up, Heq_low, Heq_up = lc, L, Hc, 0.9 * Hc
+        denom = l_up - l_low
+        if denom == 0:
+            denom = 1e-16
+        frac = (l_pipe - l_low) / denom
+        Heq = (1 - frac) * Heq_low + Heq_up * frac
+
+        return Heq
+
+    @staticmethod
+    def check_erosie_stationair(
+        l_pipe: np.ndarray,
+        h_timeseries: np.ndarray,
+        stijghoogteverloop: np.ndarray,
+        settings: PipingSettings,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Controleer of een pipe kan groeien bij de maximale waterstand en stijghoogte.
+
+        Erosie is niet mogelijk bij:
+        - geen opbarsten bij maximale stijghoogte (en nog geen pipe aanwezig);
+        - geen heave bij maximale stijghoogte;
+        - geen pipegroei bij maximale waterstand (evenwichtsverval niet overschreden).
+
+        Parameters
+        ----------
+        l_pipe : np.ndarray
+            Beginlengte van de pipe per sample [m].
+        h_timeseries : np.ndarray
+            Waterstandsverloop [m+NAP], vorm n x 1.
+        stijghoogteverloop : np.ndarray
+            Stijghoogteverloop [m+NAP], vorm n x aantal samples.
+        settings : PipingSettings
+            Instellingen voor piping berekeningen.
+
+        Returns
+        -------
+        erosion_potential : np.ndarray
+            Per sample of erosie mogelijk is.
+        Hc : np.ndarray
+            Kritiek verval per sample [m].
+        lc : np.ndarray
+            Kritieke pipelengte per sample [m].
+        """
+        Hc = PipingEquations.H_c(settings)
+        lc = PipingEquations.pipe_lengte_kritiek(settings)
+        Heq = PipingEquations.H_equilibrium(Hc, lc, l_pipe, settings)
+        max_stijghoogte = np.max(stijghoogteverloop, axis=0)
+        max_waterstand = np.max(h_timeseries, axis=0)
+        Z_u_max = PipingEquations._Z_u(
+            settings.m_u,
+            PipingEquations.delta_phi_cu(settings),
+            max_stijghoogte,
+            settings.h_exit,
+        )
+        Z_h_max = PipingEquations._Z_h(
+            settings.i_ch, max_stijghoogte, settings.h_exit, settings.D_cover
+        )
+        Z_p_max = Heq - PipingEquations.verval(
+            max_waterstand, settings.h_exit, settings.r_c, settings.D_cover
+        )
+        erosion_potential = ~(
+            ((Z_u_max > 0) & (l_pipe == 0)) | (Z_h_max > 0) | (Z_p_max > 0)
+        )
+
+        return erosion_potential, Hc, lc
+
+    @staticmethod
+    def progressiesnelheid(
+        H: np.ndarray, Heq: float, l_pipe: np.ndarray, settings: PipingSettings
+    ) -> np.ndarray:
+        """
+        Berekening van de pipegroeisnelheid.
+
+        Parameters
+        ----------
+        H : np.ndarray
+            Verval over de kering [m].
+        Heq : float
+            Evenwichtsverval [m].
+        l_pipe : np.ndarray
+            Pipelengte [m].
+        settings : PipingSettings
+            Instellingen voor piping berekeningen, met `dldt_modeltype`
+            "constant", "Pol2019" of "Pol2022".
+
+        Returns
+        -------
+        np.ndarray
+            Pipegroeisnelheid [m/s], niet negatief.
+
+        Raises
+        ------
+        ValueError
+            Als het model voor de pipegroeisnelheid onbekend is.
+        """
+        if settings.dldt_modeltype == "constant":
+            dldt = settings.dldt_constant
+        elif settings.dldt_modeltype == "Pol2019":
+            l_pipe[l_pipe == settings.L] = l_pipe - 1e-8
+            dldt = (
+                settings.dldt_kezdi_mv
+                * settings.dldt_kezdi_C
+                * settings.k
+                * H
+                / (settings.L - l_pipe)
+                / settings.n_aq
+            )
+        elif settings.dldt_modeltype == "Pol2022":  # (PhD thesis vgl 6.5)
+            dldt = (
+                89
+                * settings.dldt_Ce
+                * (settings.k * np.clip(H - Heq, 0, None) / settings.L) ** 0.81
+            )
+        else:
+            raise ValueError("Onjuiste methode pipegroeisnelheid")
+
+        # Als l_pipe > L kunnen negatieve snelheden ontstaan. clip deze.
+        dldt = np.clip(dldt, 0, None)
+
+        return dldt
+
+    @staticmethod
+    def mogelijke_erosie(
+        h_timeseries: np.ndarray, l_pipe: np.ndarray, settings: PipingSettings
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Bepaal het stijghoogteverloop en of erosie mogelijk is.
+
+        Parameters
+        ----------
+        h_timeseries : np.ndarray
+            Waterstandsverloop [m+NAP], vorm n x 1.
+        l_pipe : np.ndarray
+            Beginlengte van de pipe per sample [m].
+        settings : PipingSettings
+            Instellingen voor piping berekeningen.
+
+        Returns
+        -------
+        stijghoogteverloop : np.ndarray
+            Stijghoogteverloop [m+NAP], vorm n x aantal samples.
+        erosion_potential : np.ndarray
+            Per sample of erosie mogelijk is.
+        Hc : np.ndarray
+            Kritiek verval per sample [m].
+        lc : np.ndarray
+            Kritieke pipelengte per sample [m].
+
+        Raises
+        ------
+        ValueError
+            Als de stijghoogte methode onjuist is.
+        """
+        if settings.methode_stijghoogte == "responsfactor":
+            stijghoogteverloop = PipingEquations.stijghoogte_responsfactor(
+                h_timeseries, settings
+            )
+        elif settings.methode_stijghoogte == "responsfactor_phi_gem":
+            stijghoogteverloop = PipingEquations.stijghoogte_responsfactor_phi_gem(
+                h_timeseries, settings
+            )
+        elif settings.methode_stijghoogte == "TRWD_4A":
+            stijghoogteverloop = PipingEquations.stijghoogte_TRWD_4A(
+                h_timeseries, settings
+            )
+        else:
+            raise ValueError("Onjuiste methode stijghoogte")
+
+        # Controle op mogelijke erosie
+        erosion_potential, Hc, lc = PipingEquations.check_erosie_stationair(
+            l_pipe, h_timeseries, stijghoogteverloop, settings
+        )
+
+        return stijghoogteverloop, erosion_potential, Hc, lc
+
+    @staticmethod
+    def z_pipelengte(settings: PipingSettings) -> float | np.ndarray:
+        """
+        Grenstoestand voor pipelengte: 1 - l_end / L.
+
+        Parameters
+        ----------
+        settings : PipingSettings
+            Instellingen voor piping berekeningen, met een waterstandsreeks.
+
+        Returns
+        -------
+        float or np.ndarray
+            Z-waarde, een float bij scalaire instellingen.
+        """
+        l_end = PipingEquations.pipelengte_ontwikkeling(settings).l_end
+        z_fail = 1 - (l_end / np.atleast_1d(settings.L))
+        if np.ndim(settings.L) == 0:
+            z_fail = float(z_fail[0])
+
+        return z_fail
+
+    @staticmethod
+    def pipelengte_ontwikkeling(settings: PipingSettings) -> PipeGrowth:
+        """
+        Berekening van de pipelengte over de tijd, gegeven een waterstandsverloop.
+
+        Parameters
+        ----------
+        settings : PipingSettings
+            Instellingen voor piping berekeningen, met `timegrid` en
+            `h_timeseries`. Scalaire instellingen (een sample) worden als
+            1-element arrays doorgerekend.
+
+        Returns
+        -------
+        PipeGrowth
+            Per sample: eindlengte, lengte over de tijd, gemiddelde en laatste
+            groeisnelheid, en de tijdstippen van opbarsten, heave, Sellmeijer,
+            eerste erosie, interventie en falen (NaN als dit niet optreedt).
+        """
+        if np.ndim(settings.L) == 0:
+            # Een enkel sample, met scalaire instellingen
+            values = settings.get_settings_as_dict()
+            settings = settings.copy()
+            settings.set_params_fromdict(
+                {k: np.atleast_1d(v) for k, v in values.items()}
+            )
+        timegrid = settings.timegrid
+        h_timeseries = settings.h_timeseries
+
+        # Berekening stijghoogteverloop eenmalig
+        l_pipe = settings.l_ini * settings.L
+        vec_stijghoogteverloop, erosion_potential, vec_Hc, vec_lc = (
+            PipingEquations.mogelijke_erosie(h_timeseries, l_pipe, settings)
+        )
+
+        # outputvariabelen
+        l_time_vec = []
+        l_end = l_pipe.copy()
+        dldt_avg = np.zeros_like(l_pipe, dtype=np.float64)
+        dldt_end = np.zeros_like(l_pipe, dtype=np.float64)
+        t_uplift = np.full_like(l_pipe, np.nan, dtype=np.float64)
+        t_heave = np.full_like(l_pipe, np.nan, dtype=np.float64)
+        t_sell = np.full_like(l_pipe, np.nan, dtype=np.float64)
+        t_ff = np.full_like(l_pipe, np.nan, dtype=np.float64)
+        t_fail = np.full_like(l_pipe, np.nan, dtype=np.float64)
+        firsttime_U_H_Heq = np.full_like(l_pipe, np.nan, dtype=np.float64)
+        for i in range(len(l_pipe)):
+            settingsi = settings.get_partial_settings(i, verify_integrity=False)
+            Hc = vec_Hc[[i]]
+            lc = vec_lc[[i]]
+            stijghoogteverloop = vec_stijghoogteverloop[:, [i]]
+
+            # Tijdsafhankelijke som als erosie kan optreden
+            if erosion_potential[i]:
+                # Tijdstappen
+                dt = np.diff(timegrid, axis=0)
+
+                # rekenvariabelen
+                dldt = np.zeros_like(timegrid, dtype=np.float64)
+                l_time = np.full_like(timegrid, l_pipe[i], dtype=np.float64)
+
+                Z_uplift = PipingEquations._Z_u(
+                    settings.m_u[i],
+                    PipingEquations.delta_phi_cu(settingsi),
+                    stijghoogteverloop,
+                    settings.h_exit[i],
+                )
+                Z_heave = PipingEquations._Z_h(
+                    settings.i_ch[i],
+                    stijghoogteverloop,
+                    settings.h_exit[i],
+                    settings.D_cover[i],
+                )
+                Z_sell = PipingEquations._Z_p(
+                    settings.m_p[i],
+                    Hc,
+                    h_timeseries,
+                    settings.h_exit[i],
+                    settings.r_c[i],
+                    settings.D_cover[i],
+                )
+
+                H = PipingEquations.verval(
+                    h_timeseries,
+                    settings.h_exit[i],
+                    settings.r_c[i],
+                    settings.D_cover[i],
+                )
+                H[H < 0] = 0.0
+
+                # Uplift
+                if settings.l_ini[i] > 1e-6:
+                    t_uplift[i] = timegrid[0, 0]  # first
+                elif np.min(Z_uplift) < 0:
+                    t_uplift[i] = np.min(timegrid[Z_uplift < 0])
+
+                # Pipelengte en faaldefinitie
+                intervention_active = False
+                intervention_time = np.nan
+                time_uplift = np.nan
+                H_cummax = np.maximum.accumulate(
+                    H[:, 0]
+                )  # H_cummax[t] == np.max(H[: t + 1])
+                for t in range(1, timegrid.shape[0]):
+                    # Evenwichtscurve/verval
+                    Heq = PipingEquations._H_equilibrium(
+                        settings.m_p[i] * Hc[0], lc[0], l_time[t - 1, 0], settings.L[i]
+                    )
+
+                    # uplift
+                    if math.isnan(time_uplift):
+                        if settings.l_ini[i] > 0.000001:
+                            time_uplift = timegrid[0, 0]  # first
+                        elif Z_uplift[t, 0] < 0:
+                            time_uplift = timegrid[t, 0]
+
+                    # uitspoelen zand
+                    if (
+                        (not math.isnan(time_uplift))
+                        and (Z_heave[t, 0] < 0)
+                        and (H[t, 0] >= Heq)
+                        and math.isnan(firsttime_U_H_Heq[i])
+                    ):
+                        firsttime_U_H_Heq[i] = timegrid[t, 0]
+
+                    # Bepaal of interventie heeft plaatsgevonden
+                    if (
+                        (not math.isnan(firsttime_U_H_Heq[i]))
+                        and settings.detect_true[i] == 1
+                        and timegrid[t, 0]
+                        > (firsttime_U_H_Heq[i] + settings.intervention_hours[i])
+                    ):
+                        if not intervention_active:  # first time active
+                            intervention_time = timegrid[t, 0]
+                        intervention_active = True
+
+                    # Voorwaarde voor pipegroei
+                    erosion_condition = (
+                        (timegrid[t, 0] >= firsttime_U_H_Heq[i])
+                        and (Z_heave[t, 0] < 0)
+                        and (l_time[t - 1, 0] < settings.L[i])
+                        and not intervention_active
+                    )
+                    if erosion_condition:
+                        dldt[t] = PipingEquations.progressiesnelheid(
+                            H[t], Heq, l_time[t - 1], settingsi
+                        )
+
+                    l_time[t, 0] = l_time[t - 1, 0] + dldt[t, 0] * (dt[t - 1, 0] * 3600)
+
+                    # correctie om te voorkomen dat pipe in 1 tijdstap doorschiet terwijl Hc niet wordt overschreden
+                    if (l_time[t, 0] > lc[0]) & (
+                        H_cummax[t] < (settings.m_p[i] * Hc[0])
+                    ):
+                        l_time[t, 0] = np.max([lc[0], l_pipe[0]])
+
+                Z_fail = settingsi.L - l_time
+                l_end[i] = l_time[-1, 0]
+
+                if (dldt > 0).any():
+                    dldt_avg[i] = np.mean(dldt[dldt > 0])
+                dldt_end[i] = dldt[-1, 0]
+
+                l_time_vec.append(l_time.copy())
+
+                t_heave[i] = min(timegrid[Z_heave < 0], default=np.nan)
+                t_sell[i] = min(timegrid[Z_sell < 0], default=np.nan)
+                t_fail[i] = min(timegrid[Z_fail < 0], default=np.nan)
+                t_ff[i] = intervention_time
+            else:
+                l_time_vec.append(np.array([l_pipe[i]]))
+
+        return PipeGrowth(
+            l_end,
+            l_time_vec,
+            dldt_avg,
+            dldt_end,
+            t_uplift,
+            t_heave,
+            t_sell,
+            firsttime_U_H_Heq,
+            t_ff,
+            t_fail,
+        )

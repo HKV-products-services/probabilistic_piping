@@ -3,6 +3,8 @@ from typing import Self
 import numpy as np
 from pydantic.dataclasses import dataclass
 
+from probabilistic_piping.piping_equations import PipingEquations
+
 
 @dataclass(config={"arbitrary_types_allowed": True})
 class PipingSettings:
@@ -80,6 +82,28 @@ class PipingSettings:
         Gemiddelde stijghoogte bij het uittredepunt, bij "responsfactor_phi_gem" [m+NAP].
     h_gem : float or np.ndarray
         Gemiddelde buitenwaterstand, bij "responsfactor_phi_gem" [m+NAP].
+    dldt_modeltype : str
+        Model voor de pipegroeisnelheid ("constant", "Pol2019" of "Pol2022"),
+        by default "constant". Geldt voor alle samples.
+    dldt_constant : float or np.ndarray
+        Constante pipegroeisnelheid, bij "constant" [m/s].
+    dldt_Ce : float or np.ndarray
+        Groeicoefficient, bij "Pol2022" [-].
+    dldt_kezdi_C : float or np.ndarray
+        Constante C in de formule van Kezdi, bij "Pol2019" [-].
+    dldt_kezdi_mv : float or np.ndarray
+        Constante mv in de formule van Kezdi, bij "Pol2019" [-].
+    l_ini : float or np.ndarray
+        Beginlengte van de pipe als fractie van de kwelweglengte L [-].
+    detect_true : float or np.ndarray
+        Of een pipe wordt opgemerkt (1) of niet (0), voor interventie [-].
+    intervention_hours : float or np.ndarray
+        Aantal uren tussen het begin van het uitspoelen en de interventie [uur].
+    timegrid : np.ndarray or None
+        Tijdstippen van de waterstandsreeks [uur], vorm n x 1. Een reeks voor
+        alle samples.
+    h_timeseries : np.ndarray or None
+        Buitenwaterstand op de tijdstippen van timegrid [m+NAP], vorm n x 1.
     """
 
     t_norm: float | np.ndarray = np.nan
@@ -116,13 +140,24 @@ class PipingSettings:
     methode_stijghoogte: str = "responsfactor"
     phi_gem: float | np.ndarray = np.nan
     h_gem: float | np.ndarray = np.nan
+    dldt_modeltype: str = "constant"
+    dldt_constant: float | np.ndarray = np.nan
+    dldt_Ce: float | np.ndarray = np.nan
+    dldt_kezdi_C: float | np.ndarray = np.nan
+    dldt_kezdi_mv: float | np.ndarray = np.nan
+    l_ini: float | np.ndarray = np.nan
+    detect_true: float | np.ndarray = np.nan
+    intervention_hours: float | np.ndarray = np.nan
+    timegrid: np.ndarray | None = None
+    h_timeseries: np.ndarray | None = None
 
     def __post_init__(self) -> None:
         """
         Post-initialization to set up attributes and their dimensions.
         """
         # Determine attributes which need to be checked, store info in a dict
-        ignore = ["methode_stijghoogte"]
+        # Instellingen die niet per sample worden uitgebreid
+        ignore = ["methode_stijghoogte", "dldt_modeltype", "timegrid", "h_timeseries"]
         attrs = []
         for a in dir(self):
             if (
@@ -253,7 +288,8 @@ class PipingSettings:
         # Copy ignored settings
         settings_dict = {}
         for attr in self.__ignore:
-            settings_dict[attr] = getattr(self, attr)
+            val = getattr(self, attr)
+            settings_dict[attr] = val.copy() if isinstance(val, np.ndarray) else val
 
         # Copy all other settings
         for attr, (val, ndim) in self.__attrs.items():
@@ -289,7 +325,8 @@ class PipingSettings:
         # Copy ignored settings
         settings_dict = {}
         for attr in self.__ignore:
-            settings_dict[attr] = getattr(self, attr)
+            val = getattr(self, attr)
+            settings_dict[attr] = val.copy() if isinstance(val, np.ndarray) else val
 
         # Copy i-th slice for all other settings
         for attr, (val, _) in self.__attrs.items():
@@ -312,3 +349,42 @@ class PipingSettings:
         for attr, (val, _) in self.__attrs.items():
             settings[attr] = val
         return settings
+
+    def set_waterstand_tijdreeks(
+        self,
+        tijd: np.ndarray | list[float],
+        waterstand: np.ndarray | list[float],
+        dt: float | None = None,
+    ) -> None:
+        """
+        Zet een waterstandsreeks, gelijk voor alle samples.
+
+        Parameters
+        ----------
+        tijd : np.ndarray or list of float
+            Tijdstippen [uur].
+        waterstand : np.ndarray or list of float
+            Buitenwaterstand op de tijdstippen [m+NAP].
+        dt : float or None, optional
+            Tijdstap [uur] waarmee de reeks wordt geinterpoleerd, by default None
+            (de reeks blijft zoals opgegeven).
+
+        Raises
+        ------
+        ValueError
+            Als tijd en waterstand niet even lang zijn.
+        """
+        tijd = np.asarray(tijd, dtype=np.float64).reshape(-1, 1)
+        waterstand = np.asarray(waterstand, dtype=np.float64).reshape(-1, 1)
+        if tijd.shape != waterstand.shape:
+            raise ValueError("Tijd en waterstand arrays zijn niet even lang")
+
+        if dt is not None:
+            t_new = np.arange(tijd[0, 0], tijd[-1, 0] + dt, dt)
+            waterstand = PipingEquations.inextrp1d(
+                t_new, tijd[:, 0], waterstand[:, 0]
+            ).reshape(-1, 1)
+            tijd = t_new.reshape(-1, 1)
+
+        self.set_param("timegrid", tijd, verify_integrity=False)
+        self.set_param("h_timeseries", waterstand, verify_integrity=False)
