@@ -30,12 +30,37 @@ MC_2000 = {
     "MaximumCoefficientOfVariation": 0.0,
 }
 
+# Groeisnelheden per model waarbij Monte Carlo falen vindt (lognormaal)
+SPEED_ROW = {
+    "constant": "dldt_constant",
+    "Pol2019": "dldt_kezdi_C",
+    "Pol2022": "dldt_Ce",
+}
+MODEL_SPEED = {
+    "constant": ("Lognormaal", 8e-4, 4e-4),
+    "Pol2019": ("Lognormaal", 4.0, 2.0),
+    "Pol2022": ("Lognormaal", 0.4, 0.2),
+}
+MODEL_FIXED = {
+    "constant": {},
+    "Pol2019": {
+        "dldt_kezdi_mv": ("geen stochast", 2.0),
+        "n_aq": ("geen stochast", 0.4),
+    },
+    "Pol2022": {},
+}
+DS_10 = {
+    "Rekentechniek": "DS MediumSafe OrthogonalDirection",
+    "BlockSize": 10,
+    "MaximumOuterSampling": 1,
+    "MaximumCoefficientOfVariation": 0.0,
+}
 
-def _input_df(dldt_Ce):
-    """Base input from the test data, with the growth parameters added."""
+
+def _df_with(rows, drop=()):
+    """Base input from the test data, with the given rows added and others dropped."""
     data_path = Path(__file__).parent / "data" / "full_test.xlsx"
     df = pd.read_excel(data_path, sheet_name="input", index_col=0, header=0)
-    rows = {**GROWTH_FIXED, "dldt_Ce": dldt_Ce}
     for name, (kind, val, *spread) in rows.items():
         df.loc[name] = np.nan
         df.loc[name, ["Beschrijving", "Waarde", "Kansverdeling"]] = [name, val, kind]
@@ -45,7 +70,26 @@ def _input_df(dldt_Ce):
                 "Standaardafwijking",
                 0.0,
             ]
-    return df
+    return df.drop(index=list(drop))
+
+
+def _input_df(dldt_Ce):
+    """Base input from the test data, with the growth parameters added."""
+    return _df_with({**GROWTH_FIXED, "dldt_Ce": dldt_Ce})
+
+
+def _model_df(model, factor=1.0, **changes):
+    """Input for a growth model at `factor` times the speeds of the ticket.
+
+    A value in `changes` replaces that row, None removes it.
+    """
+    rows = {k: v for k, v in GROWTH_FIXED.items() if k != "dldt_modeltype"}
+    rows["dldt_modeltype"] = ("geen stochast", model)
+    kind, mean, sd = MODEL_SPEED[model]
+    rows[SPEED_ROW[model]] = (kind, mean * factor, sd * factor)
+    rows.update(MODEL_FIXED[model])
+    rows.update(changes)
+    return _df_with({k: v for k, v in rows.items() if v is not None})
 
 
 def _hydrograph(peak, plateau=0):
@@ -214,6 +258,99 @@ def test_stijghoogte_input_is_checked():
     t, h = _hydrograph(10.0)
     with pytest.raises(ValueError, match="D_vl"):
         _timedep(df, t, h, "FORM AbdoRackwitz")
+
+
+# Elk groeimodel rekent met Monte Carlo en met directional sampling
+@pytest.mark.parametrize("model", ["constant", "Pol2019", "Pol2022"])
+@pytest.mark.parametrize("technique", [MC_2000, DS_10], ids=["MC", "DS"])
+def test_growth_models_and_solvers(model, technique):
+    t, h = _hydrograph(10.0, plateau=3)
+    res = _timedep(_model_df(model), t, h, technique)
+
+    assert 0 < res.prob_cond < 1
+
+
+# De kans neemt niet af als de groeisnelheid toeneemt
+@pytest.mark.parametrize("model", ["constant", "Pol2019", "Pol2022"])
+def test_probability_increases_with_growth_speed(model):
+    t, h = _hydrograph(10.0, plateau=3)
+    mc = {**MC_2000, "MaximumOuterSampling": 1}
+    probs = [
+        _timedep(_model_df(model, factor), t, h, mc).prob_cond
+        for factor in (0.25, 1, 4)
+    ]
+
+    assert np.all(np.diff(probs) >= 0)
+    assert probs[-1] > probs[0]
+
+
+# Met een stochastische beginlengte geeft de batch dezelfde Z als losse samples
+def test_z_pipelengte_stochastic_l_ini_scalar_equals_batch():
+    df = _model_df("Pol2022")
+    t, h = _hydrograph(10.0, plateau=3)
+    inp = ProbInput.from_dataframe(df)
+    names = [k for k in RelevantStochasts().timedep_piping if k in inp.stochasts]
+    ot.RandomGenerator.SetSeed(3)
+    X = np.array(ot.JointDistribution([inp.stochasts[k] for k in names]).getSample(200))
+    # Schaal de groeicoefficient, zodat de helft van de samples faalt
+    X[:, names.index("dldt_Ce")] *= 15
+    l_ini = np.random.default_rng(0).uniform(0, 0.4, len(X))
+
+    def new_settings(values):
+        settings = PipingSettings()
+        settings.set_params_fromdict(inp.params)
+        settings.set_waterstand_tijdreeks(t, h)
+        settings.set_params_fromdict(values)
+        return settings
+
+    columns = {k: X[:, j] for j, k in enumerate(names)}
+    z_batch = PipingEquations.z_pipelengte(new_settings({**columns, "l_ini": l_ini}))
+    assert 0.2 < (z_batch < 0).mean() < 0.8
+
+    for i, z_expected in enumerate(z_batch):
+        values = {k: float(v[i]) for k, v in columns.items()}
+        z = PipingEquations.z_pipelengte(new_settings({**values, "l_ini": l_ini[i]}))
+        assert np.isclose(z, z_expected, rtol=1e-12, atol=1e-12)
+
+
+# Ontbrekende of ongeldige groei-invoer geeft een fout voor de berekening
+@pytest.mark.parametrize(
+    "technique", [MC_2000, "FORM AbdoRackwitz"], ids=["MC", "FORM"]
+)
+@pytest.mark.parametrize(
+    "model, changes, row",
+    [
+        ("Pol2022", {"dldt_modeltype": None}, "^'dldt_modeltype' is None"),
+        ("Pol2022", {"dldt_modeltype": ("geen stochast", "foo")}, "^'dldt_modeltype'"),
+        ("Pol2022", {"l_ini": None}, "l_ini"),
+        ("Pol2022", {"dldt_Ce": None}, "dldt_Ce"),
+        ("constant", {"dldt_constant": None}, "dldt_constant"),
+        ("Pol2019", {"n_aq": None}, "n_aq"),
+        ("Pol2019", {"n_aq": ("geen stochast", 0.0)}, "n_aq"),
+    ],
+)
+def test_growth_input_is_checked(technique, model, changes, row):
+    t, h = _hydrograph(10.0, plateau=3)
+    with pytest.raises(ValueError, match=row):
+        _timedep(_model_df(model, **changes), t, h, technique)
+
+
+# Een groeivariabele die een stochast is wordt niet gecontroleerd
+def test_growth_input_check_skips_stochasts():
+    settings = PipingSettings(dldt_modeltype="Pol2022", l_ini=0.0)
+
+    with pytest.raises(ValueError, match="dldt_Ce"):
+        PipingEquations.check_pipegroei(settings)
+    PipingEquations.check_pipegroei(settings, {"dldt_Ce"})
+
+
+# Zonder falen is de kans nul, met de melding van een simulatie zonder falen
+def test_zero_failures():
+    t, h = _hydrograph(4.0, plateau=3)
+    res = _timedep(_model_df("Pol2022"), t, h, MC_2000)
+
+    assert res.prob_cond == 0
+    assert "Geen falende samples" in res.message
 
 
 # Het importeren van het pakket importeert matplotlib niet

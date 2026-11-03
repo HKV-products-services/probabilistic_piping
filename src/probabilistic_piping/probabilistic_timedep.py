@@ -56,6 +56,7 @@ class ProbPipingTimeDepWaterlevel(ProbPipingBase):
             settings_dict = {**prob_input.params}
         settings.set_params_fromdict(settings_dict)
         self.piping_eq.check_stijghoogte(settings, set(prob_input.stochasts))
+        self.piping_eq.check_pipegroei(settings, set(prob_input.stochasts))
 
         # Zet de waterstandsreeks. De piek is de waterstand voor de resultaten.
         settings.set_waterstand_tijdreeks(timegrid, h_timeseries, dt=dt)

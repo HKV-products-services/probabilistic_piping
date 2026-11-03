@@ -82,9 +82,10 @@ class PipingSettings:
         Gemiddelde stijghoogte bij het uittredepunt, bij "responsfactor_phi_gem" [m+NAP].
     h_gem : float or np.ndarray
         Gemiddelde buitenwaterstand, bij "responsfactor_phi_gem" [m+NAP].
-    dldt_modeltype : str
+    dldt_modeltype : str or None
         Model voor de pipegroeisnelheid ("constant", "Pol2019" of "Pol2022"),
-        by default "constant". Geldt voor alle samples.
+        verplicht voor timedep berekeningen, by default None. Geldt voor alle
+        samples.
     dldt_constant : float or np.ndarray
         Constante pipegroeisnelheid, bij "constant" [m/s].
     dldt_Ce : float or np.ndarray
@@ -140,7 +141,7 @@ class PipingSettings:
     methode_stijghoogte: str = "responsfactor"
     phi_gem: float | np.ndarray = np.nan
     h_gem: float | np.ndarray = np.nan
-    dldt_modeltype: str = "constant"
+    dldt_modeltype: str | None = None
     dldt_constant: float | np.ndarray = np.nan
     dldt_Ce: float | np.ndarray = np.nan
     dldt_kezdi_C: float | np.ndarray = np.nan

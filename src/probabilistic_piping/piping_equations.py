@@ -664,6 +664,54 @@ class PipingEquations:
                     f"{settings.methode_stijghoogte=}"
                 )
 
+    @classmethod
+    def check_pipegroei(
+        cls, settings: PipingSettings, stochasts: set[str] = frozenset()
+    ) -> None:
+        """
+        Controleer of de invoer van de pipegroei geldig is.
+
+        Alleen de invoer die het gekozen groeimodel nodig heeft wordt
+        gecontroleerd. Variabelen in `stochasts` worden overgeslagen, omdat
+        deze per sample worden ingevuld.
+
+        Parameters
+        ----------
+        settings : PipingSettings
+            Instellingen voor piping berekeningen.
+        stochasts : set of str, optional
+            Namen van variabelen die als stochast worden doorgerekend, by default leeg.
+
+        Raises
+        ------
+        ValueError
+            Als het groeimodel ontbreekt of onbekend is, als een benodigde
+            variabele NaN is, of als `n_aq` nul is bij Pol2019.
+        """
+        required = {
+            "constant": ["dldt_constant"],
+            "Pol2019": ["dldt_kezdi_C", "dldt_kezdi_mv", "n_aq"],
+            "Pol2022": ["dldt_Ce"],
+        }
+        if settings.dldt_modeltype not in required:
+            raise ValueError(
+                f"'dldt_modeltype' is {settings.dldt_modeltype!r}, maar moet een van "
+                f"{', '.join(required)} zijn"
+            )
+
+        for name in ["l_ini"] + required[settings.dldt_modeltype]:
+            if name in stochasts:
+                continue
+            val = np.asarray(getattr(settings, name), dtype=float)
+            if np.isnan(val).any():
+                raise ValueError(
+                    f"'{name}' is NaN, maar is nodig voor {settings.dldt_modeltype=}"
+                )
+            if name == "n_aq" and (val == 0).any():
+                raise ValueError(
+                    f"'{name}' is nul, maar mag niet nul zijn voor {settings.dldt_modeltype=}"
+                )
+
     @staticmethod
     def pipe_lengte_kritiek(settings: PipingSettings) -> float | np.ndarray:
         """
@@ -1116,7 +1164,7 @@ class PipingEquations:
                     if (l_time[t, 0] > lc[0]) & (
                         H_cummax[t] < (settings.m_p[i] * Hc[0])
                     ):
-                        l_time[t, 0] = np.max([lc[0], l_pipe[0]])
+                        l_time[t, 0] = np.max([lc[0], l_pipe[i]])
 
                 Z_fail = settingsi.L - l_time
                 l_end[i] = l_time[-1, 0]
