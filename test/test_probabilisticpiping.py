@@ -537,6 +537,68 @@ def test_solver_failure_stops_a_fragilitycurve():
     assert "NotYetImplemented" not in str(error.value)
 
 
+# MaximumEvaluationNumber
+FORM_ALGOS = [ot.Cobyla, ot.AbdoRackwitz]
+LIMIT_ROWS = ["MaximumEvaluationNumber", "MaximumCallsNumber"]
+
+
+def _calls_limit(algo, options):
+    algo = algo()
+    ProbPipingFixedWaterlevel.set_calc_options(algo, options, False)
+    return algo.getMaximumCallsNumber()
+
+
+@pytest.mark.parametrize("algo", FORM_ALGOS)
+@pytest.mark.parametrize("value", [500, 500.0])
+@pytest.mark.parametrize("row", LIMIT_ROWS)
+def test_calls_limit_reaches_the_solver(algo, value, row):
+    assert _calls_limit(algo, {row: value}) == 500
+
+
+@pytest.mark.parametrize("algo", FORM_ALGOS)
+@pytest.mark.parametrize("swap", [False, True])
+def test_maximum_calls_number_wins_over_evaluation_number(algo, swap):
+    options = {"MaximumEvaluationNumber": 700, "MaximumCallsNumber": 500}
+    if swap:
+        options = dict(reversed(options.items()))
+    assert _calls_limit(algo, options) == 500
+
+
+@pytest.mark.parametrize("algo", FORM_ALGOS)
+@pytest.mark.parametrize("value", [1e10, -1, 0, 1000.5])
+@pytest.mark.parametrize("row", LIMIT_ROWS)
+def test_invalid_calls_limit_raises_value_error(algo, value, row):
+    with pytest.raises(ValueError, match=row):
+        _calls_limit(algo, {row: value})
+
+
+@pytest.mark.parametrize(
+    "technique, low, high", [(FORM_COBYLA, 100, 1000), (FORM_AR, 3, 100)]
+)
+@pytest.mark.parametrize("row", LIMIT_ROWS)
+def test_calls_limit_has_an_effect(technique, low, high, row):
+    with pytest.raises(RuntimeError) as error:
+        _combi(technique, **{row: low})
+    assert "NotYetImplemented" not in str(error.value)
+    assert _combi(technique, **{row: high}).message is None
+
+
+@pytest.mark.parametrize("technique", [FORM_AR, FORM_COBYLA])
+def test_run_under_the_limit_is_unchanged(technique):
+    default = _combi(technique)
+    for limit in [1000, 1e3]:
+        result = _combi(technique, MaximumEvaluationNumber=limit)
+        assert result.prob_cond == default.prob_cond
+        assert result.functionevals == default.functionevals
+
+
+@pytest.mark.parametrize("technique", [MONTE_CARLO, DIRECTIONAL])
+def test_simulation_ignores_the_calls_limit(technique):
+    options = {**SIM_OPTIONS[technique], "MaximumEvaluationNumber": 3}
+    result = _custom_z(lambda s: s.h_exit + 1.5, technique, **options)
+    assert 0 < result.prob_cond < 1
+
+
 # Uitlijning simulatie met FORM
 MC_OPTIONS = {"BlockSize": 1000, "MaximumOuterSampling": 10}
 DS_OPTIONS = {"BlockSize": 100, "MaximumOuterSampling": 5}

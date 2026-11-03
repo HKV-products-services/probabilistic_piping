@@ -374,7 +374,31 @@ class ProbPipingBase(BaseModel):
         Returns
         -------
         None
+
+        Raises
+        ------
+        ValueError
+            If MaximumCallsNumber or MaximumEvaluationNumber is not a whole number
+            from 1 to 4294967295 and the algorithm has a limit on the number of calls.
+            MaximumEvaluationNumber is the old name of MaximumCallsNumber (OpenTURNS < 1.24),
+            MaximumCallsNumber wins if both are present.
         """
+        if hasattr(optimAlgo, "setMaximumCallsNumber"):
+            calc_options = dict(calc_options)
+            limits = {}
+            for name in ("MaximumEvaluationNumber", "MaximumCallsNumber"):
+                val = calc_options.pop(name, None)
+                if val is None:
+                    continue
+                if not 1 <= val <= 2**32 - 1 or val != int(val):
+                    raise ValueError(
+                        f"Onjuiste waarde voor {name}: {val}, "
+                        "moet een geheel getal van 1 tot 4294967295 zijn"
+                    )
+                limits[name] = int(val)
+            # MaximumCallsNumber (laatste) wint van de oude naam
+            if limits:
+                calc_options["MaximumCallsNumber"] = list(limits.values())[-1]
         for option_name, option_val in calc_options.items():
             attr_name = f"set{option_name}"
             if hasattr(optimAlgo, attr_name):
