@@ -509,8 +509,11 @@ def test_simulation_without_failures(technique):
 def test_simulation_with_only_failures(technique):
     result = _custom_z(_constant_z(-1.0), technique, **SIM_OPTIONS[technique])
     assert result.prob_cond == 1
-    assert result.physical_design is not None
-    assert result.message is None
+    assert result.message
+    assert result.z_val is None
+    assert result.physical_design is None
+    assert result.standard_design is None
+    assert result.importancefactors is None
 
 
 @pytest.mark.parametrize("technique", [FORM_AR, FORM_COBYLA])
@@ -532,3 +535,67 @@ def test_solver_failure_stops_a_fragilitycurve():
     with pytest.raises(RuntimeError) as error:
         prob.fixed_waterlevel_fragilitycurve(inp, hlist=[0.0, 2.0, 4.0, 6.0])
     assert "NotYetImplemented" not in str(error.value)
+
+
+# Uitlijning simulatie met FORM
+MC_OPTIONS = {"BlockSize": 1000, "MaximumOuterSampling": 10}
+DS_OPTIONS = {"BlockSize": 100, "MaximumOuterSampling": 5}
+
+
+def _at_waterlevel(z_type, h, technique, **options):
+    inp = _prob_input(technique, MaximumCoefficientOfVariation=0, **options)
+    ot.RandomGenerator.SetSeed(1)
+    prob = ProbPipingFixedWaterlevel(progress=False)
+    return prob.fixed_waterlevel_failureprobability(inp, z_type=z_type, h=h)[1]
+
+
+def _assert_matches_form(z_type, h, technique, options, max_distance):
+    form = _at_waterlevel(z_type, h, FORM_AR)
+    result = _at_waterlevel(z_type, h, technique, **options)
+    assert 0 < result.prob_cond < 1
+    distance = math.dist(
+        [result.standard_design[k] for k in form.standard_design],
+        list(form.standard_design.values()),
+    )
+    assert distance < max_distance
+    assert abs(result.z_val) < 0.1
+    strong = [k for k, a in form.importancefactors.items() if abs(a) >= 0.1]
+    assert strong
+    for k in strong:
+        assert np.sign(result.importancefactors[k]) == np.sign(
+            form.importancefactors[k]
+        )
+
+
+# heave bij h=1.5 heeft pf 0.79, waar een gewone tekenwissel fout zou zijn
+@pytest.mark.parametrize("z_type, h", [("heave", 0.5), ("uplift", 1.0), ("heave", 1.5)])
+def test_monte_carlo_matches_form(z_type, h):
+    _assert_matches_form(z_type, h, MONTE_CARLO, MC_OPTIONS, 0.25)
+
+
+def test_directional_sampling_matches_form():
+    _assert_matches_form("heave", 0.5, DIRECTIONAL, DS_OPTIONS, 0.5)
+
+
+def test_simulation_design_point_distance_is_beta():
+    # De kans komt uit het simulatieresultaat en niet uit de richting
+    result = _at_waterlevel("heave", 0.5, MONTE_CARLO, **MC_OPTIONS)
+    beta = ot.Normal().computeInverseSurvivalFunction(result.prob_cond)[0]
+    assert math.isclose(beta, math.hypot(*result.standard_design.values()))
+
+
+def test_simulation_on_the_mean_has_no_importancefactors():
+    # Precies de helft van de samples faalt, dus pf is 0.5 en beta 0
+    calls = []
+
+    def half_failing(s):
+        if np.ndim(s.h_exit):
+            return np.where(np.arange(len(s.h_exit)) % 2 == 0, -1.0, 1.0)
+        calls.append(1)
+        return -1.0 if len(calls) % 2 else 1.0
+
+    ot.RandomGenerator.SetSeed(1)
+    result = _custom_z(half_failing, MONTE_CARLO, **SIM_OPTIONS[MONTE_CARLO])
+    assert result.prob_cond == 0.5
+    assert result.importancefactors is None
+    assert result.physical_design is not None

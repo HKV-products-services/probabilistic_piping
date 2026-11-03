@@ -285,7 +285,17 @@ class ProbResult:
         constant limit state function can then give a probability of about 0.5
         with Cobyla. A simulation without failures has prob_cond 0 and converged
         False, and z_val, physical_design, standard_design and importancefactors
-        are None.
+        are None. A simulation in which every sample fails has prob_cond 1 and
+        the same None fields, because there is no design point.
+
+    Notes
+    -----
+    A simulation result follows the FORM convention: the importance factors are
+    -u*/beta and the design point lies on the limit state. The direction is
+    taken from the mean of the failure domain. Above a failure probability of
+    0.5 this mean approaches the distribution mean as the probability nears 1,
+    so the direction becomes mostly noise and strong variables can differ from
+    FORM.
     """
 
     h: float | None = None
@@ -400,20 +410,36 @@ class ProbResult:
                 mechanism=z_type,
                 message="Geen falende samples gevonden",
             )
-        beta = ot.Normal().computeInverseSurvivalFunction(pf)[0]
         converged = (
             result.getCoefficientOfVariation()
             <= algo.getMaximumCoefficientOfVariation()
         )
+        if pf == 1:
+            # Als alle samples falen is beta afgekapt en zegt het ontwerppunt niets
+            return cls(
+                h=h,
+                prob_cond=1.0,
+                converged=converged,
+                functionevals=otzfunc.getEvaluationCallsNumber(),
+                mechanism=z_type,
+                message="Alle samples falen, geen ontwerppunt te bepalen",
+            )
+        beta = ot.Normal().computeInverseSurvivalFunction(pf)[0]
         sens = ot.SimulationSensitivityAnalysis(result)
         mean_uvals = distribution.getIsoProbabilisticTransformation()(
             sens.computeMeanPointInEventDomain()
         )
         mean_uvals = np.array(mean_uvals)
         udist = np.linalg.norm(mean_uvals)
-        alphas = mean_uvals / udist
-        alphas = {k: a for k, a in zip(description, alphas)}
-        up = [-a * beta for a in alphas.values()]
+        direction = mean_uvals / udist
+        # Net als bij FORM: alfa = -u*/beta, het ontwerppunt ligt op beta * richting
+        # Bij beta 0 (pf exact 0.5) zijn er geen alfa's
+        alphas = (
+            {k: a for k, a in zip(description, -np.sign(beta) * direction)}
+            if beta != 0
+            else None
+        )
+        up = list(direction * beta)
         pp = distribution.getInverseIsoProbabilisticTransformation()(up)
         up = {k: p for k, p in zip(description, up)}
         pp = {k: p for k, p in zip(description, pp)}
