@@ -924,6 +924,17 @@ class PipingEquations:
         np.ndarray
             Pipegroeisnelheid [m/s], niet negatief.
 
+        Notes
+        -----
+        `Pol2022` volgt Pol (2022), vergelijking 6.5, en is dezelfde formule als
+        in Pol et al. (2024):
+
+        - Pol, J.C. (2022). *Time-dependent development of Backward Erosion
+          Piping*. PhD thesis, TU Delft.
+          doi:10.4233/uuid:eb5ed3b2-4210-489e-b329-59722a0c50a0 (equation 6.5)
+        - Pol, J.C., Noordam, A. and Kanning, W. (2024). A 3D time-dependent
+          backward erosion piping model. *Computers and Geotechnics*.
+
         Raises
         ------
         ValueError
@@ -941,7 +952,7 @@ class PipingEquations:
                 / (settings.L - l_pipe)
                 / settings.n_aq
             )
-        elif settings.dldt_modeltype == "Pol2022":  # (PhD thesis vgl 6.5)
+        elif settings.dldt_modeltype == "Pol2022":  # Referenties: zie docstring
             dldt = (
                 89
                 * settings.dldt_Ce

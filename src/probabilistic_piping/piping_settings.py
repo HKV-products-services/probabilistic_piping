@@ -31,7 +31,7 @@ class PipingSettings:
     D_al : float or np.ndarray
         Dikte deklaag achterland [m].
     k : float or np.ndarray
-        Doorlatendheid deklaag [m/s].
+        Doorlatendheid watervoerende laag [m/s].
     k_vl : float or np.ndarray
         Doorlatendheid voorland [m/s].
     k_al : float or np.ndarray
@@ -88,11 +88,12 @@ class PipingSettings:
     dldt_modeltype : str or None
         Model voor de pipegroeisnelheid ("constant", "Pol2019" of "Pol2022"),
         verplicht voor timedep berekeningen, by default None. Geldt voor alle
-        samples.
+        samples. Referenties: zie `PipingEquations.progressiesnelheid`.
     dldt_constant : float or np.ndarray
         Constante pipegroeisnelheid, bij "constant" [m/s].
     dldt_Ce : float or np.ndarray
-        Groeicoefficient, bij "Pol2022" [-].
+        Groeicoefficient, bij "Pol2022" [-]. Referenties: zie
+        `PipingEquations.progressiesnelheid`.
     dldt_kezdi_C : float or np.ndarray
         Constante C in de formule van Kezdi, bij "Pol2019" [-].
     dldt_kezdi_mv : float or np.ndarray

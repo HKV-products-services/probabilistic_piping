@@ -1,17 +1,35 @@
+from dataclasses import field
+
 import numpy as np
 import openturns as ot
 from pydantic import validate_call
 
 from probabilistic_piping.piping_equations import PipingEquations
 from probabilistic_piping.piping_settings import PipingSettings
-from probabilistic_piping.probabilistic_base import ProbPipingBase
+from probabilistic_piping.probabilistic_base import ProbPipingBase, RelevantStochasts
 from probabilistic_piping.probabilistic_io import ProbInput, ProbResult
 
 
 class ProbPipingTimeDepWaterlevel(ProbPipingBase):
     """
     Class for probabilistic piping calculations with a timedep water level.
+
+    Attributes
+    ----------
+    progress : bool
+        Flag to indicate if progress should be shown.
+    debug : bool
+        Flag to indicate if debug information should be printed.
+    rel_stochasts : RelevantStochasts
+        Relevant stochastic variables for different types of analyses.
+    piping_eq : PipingEquations
+        Piping equations to use for the calculations.
     """
+
+    progress: bool = False
+    debug: bool = False
+    rel_stochasts: RelevantStochasts = field(default_factory=RelevantStochasts)
+    piping_eq: PipingEquations = field(default_factory=PipingEquations)
 
     @validate_call(config=dict(arbitrary_types_allowed=True))
     def timedep_waterlevel_failureprobability(
