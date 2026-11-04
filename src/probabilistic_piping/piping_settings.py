@@ -96,8 +96,9 @@ class PipingSettings:
         Constante mv in de formule van Kezdi, bij "Pol2019" [-].
     l_ini : float or np.ndarray
         Beginlengte van de pipe als fractie van de kwelweglengte L [-].
-    detect_true : float or np.ndarray
-        Of een pipe wordt opgemerkt (1) of niet (0), voor interventie [-].
+    detect_true : bool
+        Of een pipe wordt opgemerkt en er dus een interventie volgt, by default
+        False. Geldt voor alle samples.
     intervention_hours : float or np.ndarray
         Aantal uren tussen het begin van het uitspoelen en de interventie [uur].
     timegrid : np.ndarray or None
@@ -147,7 +148,7 @@ class PipingSettings:
     dldt_kezdi_C: float | np.ndarray = np.nan
     dldt_kezdi_mv: float | np.ndarray = np.nan
     l_ini: float | np.ndarray = np.nan
-    detect_true: float | np.ndarray = np.nan
+    detect_true: bool = False
     intervention_hours: float | np.ndarray = np.nan
     timegrid: np.ndarray | None = None
     h_timeseries: np.ndarray | None = None
@@ -158,7 +159,13 @@ class PipingSettings:
         """
         # Determine attributes which need to be checked, store info in a dict
         # Instellingen die niet per sample worden uitgebreid
-        ignore = ["methode_stijghoogte", "dldt_modeltype", "timegrid", "h_timeseries"]
+        ignore = [
+            "methode_stijghoogte",
+            "dldt_modeltype",
+            "detect_true",
+            "timegrid",
+            "h_timeseries",
+        ]
         attrs = []
         for a in dir(self):
             if (

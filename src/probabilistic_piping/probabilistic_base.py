@@ -124,7 +124,6 @@ class RelevantStochasts:
             "dldt_Ce",
             "dldt_kezdi_C",
             "dldt_kezdi_mv",
-            "detect_true",
             "intervention_hours",
         ]
     )

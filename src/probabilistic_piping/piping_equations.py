@@ -32,7 +32,8 @@ class PipeGrowth(NamedTuple):
     t_first_erosion : np.ndarray
         Tijdstip van het begin van het uitspoelen van zand [uur].
     t_intervention : np.ndarray
-        Tijdstip van interventie [uur].
+        Exacte tijdstip van interventie [uur]: het begin van het uitspoelen
+        plus `intervention_hours`, niet de eerstvolgende tijdstap.
     t_fail : np.ndarray
         Tijdstip van falen [uur].
     """
@@ -686,7 +687,9 @@ class PipingEquations:
         ------
         ValueError
             Als het groeimodel ontbreekt of onbekend is, als een benodigde
-            variabele NaN is, of als `n_aq` nul is bij Pol2019.
+            variabele NaN is, als `n_aq` nul is bij Pol2019, als `detect_true`
+            geen boolean of een stochast is, of als detectie aan staat zonder
+            `intervention_hours`.
         """
         required = {
             "constant": ["dldt_constant"],
@@ -711,6 +714,24 @@ class PipingEquations:
                 raise ValueError(
                     f"'{name}' is nul, maar mag niet nul zijn voor {settings.dldt_modeltype=}"
                 )
+
+        # Detectie is een instelling, geen stochast
+        if "detect_true" in stochasts:
+            raise ValueError("'detect_true' mag geen stochast zijn")
+        detect = settings.detect_true
+        if np.ndim(detect) != 0 or detect not in (0, 1):
+            raise ValueError(
+                f"'detect_true' is {detect!r}, maar moet True, False, 0 of 1 zijn"
+            )
+        settings.set_param("detect_true", bool(detect), verify_integrity=False)
+        if (
+            settings.detect_true
+            and "intervention_hours" not in stochasts
+            and np.isnan(np.asarray(settings.intervention_hours, dtype=float)).any()
+        ):
+            raise ValueError(
+                "'intervention_hours' is NaN, maar is nodig als 'detect_true' aan staat"
+            )
 
     @staticmethod
     def pipe_lengte_kritiek(settings: PipingSettings) -> float | np.ndarray:
@@ -1138,12 +1159,26 @@ class PipingEquations:
                     # Bepaal of interventie heeft plaatsgevonden
                     if (
                         (not math.isnan(firsttime_U_H_Heq[i]))
-                        and settings.detect_true[i] == 1
+                        and settings.detect_true
                         and timegrid[t, 0]
                         > (firsttime_U_H_Heq[i] + settings.intervention_hours[i])
                     ):
                         if not intervention_active:  # first time active
-                            intervention_time = timegrid[t, 0]
+                            intervention_time = (
+                                firsttime_U_H_Heq[i] + settings.intervention_hours[i]
+                            )
+                            # Groei over het deel van de stap voor de interventie
+                            frac = (intervention_time - timegrid[t - 1, 0]) / dt[
+                                t - 1, 0
+                            ]
+                            if (
+                                frac > 0
+                                and (Z_heave[t, 0] < 0)
+                                and (l_time[t - 1, 0] < settings.L[i])
+                            ):
+                                dldt[t] = frac * PipingEquations.progressiesnelheid(
+                                    H[t], Heq, l_time[t - 1], settingsi
+                                )
                         intervention_active = True
 
                     # Voorwaarde voor pipegroei

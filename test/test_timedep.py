@@ -1,3 +1,4 @@
+import functools
 import subprocess
 import sys
 from pathlib import Path
@@ -375,8 +376,163 @@ def test_timedep_piping_list():
         "dldt_Ce",
         "dldt_kezdi_C",
         "dldt_kezdi_mv",
-        "detect_true",
         "intervention_hours",
     } <= set(rel.timedep_piping)
+    assert "detect_true" not in rel.timedep_piping
     assert "cv_vl" not in rel.timedep_piping
     assert "cv_al" not in rel.timedep_piping
+
+
+# Z van de continuiteitscase, bij elke interventietijd van 0 tot 40 uur
+@functools.cache
+def _z_intervention(detect=True):
+    inp = ProbInput.from_dataframe(
+        _df_with({**GROWTH_FIXED, "dldt_Ce": ("Lognormaal", 1.0, 0.5)})
+    )
+    ih = np.round(np.arange(0, 40.0001, 0.01), 2)
+    settings = PipingSettings()
+    settings.set_params_fromdict(inp.params)
+    settings.set_waterstand_tijdreeks(*_hydrograph(10.0, plateau=3))
+    names = [k for k in RelevantStochasts().timedep_piping if k in inp.stochasts]
+    means = {k: np.full(len(ih), inp.stochasts[k].getMean()[0]) for k in names}
+    settings.set_params_fromdict({**means, "intervention_hours": ih})
+    PipingEquations.check_pipegroei(settings, set(inp.stochasts))
+    settings.set_param("detect_true", detect, verify_integrity=False)
+    growth = PipingEquations.pipelengte_ontwikkeling(settings)
+    return ih, 1 - growth.l_end / settings.L, growth
+
+
+# Z is continu en niet stijgend in de interventietijd
+def test_intervention_z_continuous_and_monotone():
+    ih, z, _ = _z_intervention()
+
+    assert np.abs(np.diff(z)).max() < 0.001
+    assert (np.diff(z) <= 1e-12).all()
+
+
+# Op hele uren is Z gelijk aan de waarden zonder deelstap
+def test_intervention_z_on_time_steps():
+    ih, z, _ = _z_intervention()
+    hours = [0, 20, 24, 25, 26, 27, 30, 40]
+    expected = [0.92290, 0.92290, 0.88662, 0.86093, 0.83429, 0.80667, 0.78809, 0.78809]
+
+    assert np.allclose(z[np.searchsorted(ih, hours)], expected, rtol=0, atol=6e-6)
+
+
+# Zonder detectie speelt de interventietijd geen rol
+def test_intervention_detection_off():
+    _, z, growth = _z_intervention(detect=False)
+
+    assert np.allclose(z, 0.78809, rtol=0, atol=6e-6)
+    assert np.isnan(growth.t_intervention).all()
+
+
+# De interventietijd is het begin van het uitspoelen plus de uren
+def test_intervention_time_is_exact():
+    ih, _, growth = _z_intervention()
+
+    assert np.allclose(growth.t_first_erosion, 6.0)
+    for hours, expected in [(20.0, 26.0), (20.5, 26.5)]:
+        assert growth.t_intervention[np.searchsorted(ih, hours)] == pytest.approx(
+            expected
+        )
+
+
+# Een interventie nadat heave voorbij is, geeft geen extra groei in de deelstap
+def test_intervention_after_heave_adds_no_growth():
+    inp = ProbInput.from_dataframe(
+        _df_with(
+            {
+                **GROWTH_FIXED,
+                "dldt_modeltype": ("geen stochast", "constant"),
+                "dldt_constant": ("geen stochast", 2e-4),
+            }
+        )
+    )
+    # Na de golf 25 uur droog, zodat heave ruim voor het einde stopt
+    t = np.arange(0, 88.5, 1.0)
+    h = np.interp(t, [0, 30, 33, 63, 88], [0.0, 10.0, 10.0, 0.0, 0.0])
+    ih = np.arange(65.0, 80.0, 0.25)
+    names = [k for k in RelevantStochasts().timedep_piping if k in inp.stochasts]
+    means = {k: np.full(len(ih), inp.stochasts[k].getMean()[0]) for k in names}
+
+    l_end = {}
+    for detect in [True, False]:
+        settings = PipingSettings()
+        settings.set_params_fromdict(inp.params)
+        settings.set_waterstand_tijdreeks(t, h)
+        settings.set_params_fromdict({**means, "intervention_hours": ih})
+        settings.set_param("detect_true", detect, verify_integrity=False)
+        l_end[detect] = PipingEquations.pipelengte_ontwikkeling(settings).l_end
+
+    assert np.array_equal(l_end[True], l_end[False])
+
+
+# Interventie als vaste waarde en als stochast geeft een kans
+@pytest.mark.parametrize(
+    "hours", [("geen stochast", 30.0), ("Lognormaal", 30.0, 5.0)], ids=["fixed", "ln"]
+)
+def test_intervention_fixed_and_stochastic(hours):
+    df = _model_df(
+        "Pol2022",
+        factor=4.0,
+        detect_true=("geen stochast", 1.0),
+        intervention_hours=hours,
+    )
+    t, h = _hydrograph(10.0, plateau=3)
+    res = _timedep(df, t, h, MC_2000)
+
+    assert 0 < res.prob_cond < 1
+
+
+# detect_true accepteert alleen een boolean waarde
+@pytest.mark.parametrize("value", [0, 1, True, False, 0.0, 1.0, np.float64(1.0)])
+def test_detect_true_accepted(value):
+    settings = PipingSettings(
+        dldt_modeltype="Pol2022", l_ini=0.0, dldt_Ce=1.0, intervention_hours=5.0
+    )
+    settings.set_param("detect_true", value, verify_integrity=False)
+    PipingEquations.check_pipegroei(settings)
+
+    assert settings.detect_true is bool(value)
+
+
+@pytest.mark.parametrize("value", [2, 0.5, "ja", None, np.nan, [1, 0]])
+def test_detect_true_invalid(value):
+    settings = PipingSettings(
+        dldt_modeltype="Pol2022", l_ini=0.0, dldt_Ce=1.0, intervention_hours=5.0
+    )
+    settings.set_param("detect_true", value, verify_integrity=False)
+
+    with pytest.raises(ValueError, match="detect_true"):
+        PipingEquations.check_pipegroei(settings)
+
+
+# detect_true als stochast, of detectie zonder interventietijd, geeft een fout
+def test_detect_true_stochast_and_missing_hours_raise():
+    settings = PipingSettings(dldt_modeltype="Pol2022", l_ini=0.0, dldt_Ce=1.0)
+
+    with pytest.raises(ValueError, match="detect_true"):
+        PipingEquations.check_pipegroei(settings, {"detect_true"})
+    PipingEquations.check_pipegroei(settings)
+    settings.set_param("detect_true", True, verify_integrity=False)
+    with pytest.raises(ValueError, match="intervention_hours"):
+        PipingEquations.check_pipegroei(settings)
+    PipingEquations.check_pipegroei(settings, {"intervention_hours"})
+
+
+@pytest.mark.parametrize(
+    "changes, row",
+    [
+        ({"detect_true": ("Lognormaal", 1.0, 0.5)}, "detect_true"),
+        ({"detect_true": ("geen stochast", 2.0)}, "detect_true"),
+        (
+            {"detect_true": ("geen stochast", 1.0), "intervention_hours": None},
+            "intervention_hours",
+        ),
+    ],
+)
+def test_detect_true_invalid_input_rows(changes, row):
+    t, h = _hydrograph(10.0, plateau=3)
+    with pytest.raises(ValueError, match=row):
+        _timedep(_model_df("Pol2022", **changes), t, h, MC_2000)
