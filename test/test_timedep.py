@@ -325,11 +325,20 @@ def test_pipelengte_ontwikkeling_result_fields():
     assert l_time[0].shape == (len(t), 1)
 
 
-# Barends is nog niet beschikbaar
+# Barends is nog niet beschikbaar, ook niet in een timedep berekening
 def test_mogelijke_erosie_barends_raises():
-    settings = PipingSettings(methode_stijghoogte="superpositie_barends")
-    with pytest.raises(ValueError, match="Onjuiste methode stijghoogte"):
-        PipingEquations.mogelijke_erosie(np.zeros((3, 1)), np.zeros(1), settings)
+    with pytest.raises(NotImplementedError, match="superpositie_barends"):
+        PipingSettings(methode_stijghoogte="superpositie_barends")
+
+    df = _input_df(("geen stochast", 1e6))
+    df.loc["methode_stijghoogte", ["Beschrijving", "Waarde", "Kansverdeling"]] = [
+        "methode_stijghoogte",
+        "superpositie_barends",
+        "geen stochast",
+    ]
+    t, h = _hydrograph(10.0)
+    with pytest.raises(NotImplementedError, match="superpositie_barends"):
+        _timedep(df, t, h, "FORM AbdoRackwitz")
 
 
 # De invoer voor de stijghoogte wordt gecontroleerd voor de berekening

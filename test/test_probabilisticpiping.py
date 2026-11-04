@@ -12,6 +12,7 @@ from probabilistic_piping import (
     ProbPipingFixedWaterlevel,
     ProbPipingFixedWaterlevelSimple,
 )
+from probabilistic_piping.piping_settings import METHODES_STIJGHOOGTE
 
 
 def test_full_semiprob():
@@ -661,3 +662,62 @@ def test_simulation_on_the_mean_has_no_importancefactors():
     assert result.prob_cond == 0.5
     assert result.importancefactors is None
     assert result.physical_design is not None
+
+
+# De stijghoogte methode wordt gecontroleerd zodra de instellingen hem krijgen
+BAD_METHODS = [
+    ("superpositie_barends", NotImplementedError, "superpositie_barends"),
+    ("foo", ValueError, "responsfactor_phi_gem"),
+]
+
+
+def _set_via_constructor(methode):
+    PipingSettings(methode_stijghoogte=methode)
+
+
+def _set_via_set_param(methode):
+    PipingSettings().set_param("methode_stijghoogte", methode)
+
+
+def _set_via_fromdict(methode):
+    PipingSettings().set_params_fromdict({"methode_stijghoogte": methode})
+
+
+SETTERS = [_set_via_constructor, _set_via_set_param, _set_via_fromdict]
+
+
+@pytest.mark.parametrize("setter", SETTERS)
+@pytest.mark.parametrize("methode, error, match", BAD_METHODS)
+def test_methode_stijghoogte_rejected_in_settings(setter, methode, error, match):
+    with pytest.raises(error, match=match):
+        setter(methode)
+
+
+@pytest.mark.parametrize("setter", SETTERS)
+@pytest.mark.parametrize("methode", METHODES_STIJGHOOGTE)
+def test_methode_stijghoogte_supported_in_settings(setter, methode):
+    setter(methode)
+
+
+def test_methode_stijghoogte_copy_and_partial_keep_method():
+    settings = PipingSettings(methode_stijghoogte="TRWD_4A", h=np.array([1.0, 2.0]))
+    settings.verify_integrity()
+    assert settings.copy().methode_stijghoogte == "TRWD_4A"
+    assert settings.get_partial_settings(0).methode_stijghoogte == "TRWD_4A"
+
+
+# Elke berekening stopt voor de eerste Z-evaluatie
+@pytest.mark.parametrize("methode, error, match", BAD_METHODS)
+def test_methode_stijghoogte_rejected_in_every_calculation(methode, error, match):
+    df = _input_df(methode)
+    with pytest.raises(error, match=match):
+        _semiprob(df)
+    for z_type in ["combi", "sellmeijer"]:
+        with pytest.raises(error, match=match):
+            _failureprobability(df, z_type)
+
+
+# Sellmeijer heeft geen invoer voor de stijghoogte nodig
+def test_sellmeijer_with_TRWD_4A_needs_no_layer_inputs():
+    df = _input_df("TRWD_4A")
+    assert 0 <= _failureprobability(df, "sellmeijer") <= 1

@@ -956,6 +956,88 @@ class PipingEquations:
         return dldt
 
     @staticmethod
+    def unit_respons(
+        x: float | np.ndarray, t: np.ndarray, settings: PipingSettings
+    ) -> np.ndarray:
+        """
+        Eenheidsrespons van de stijghoogte op afstand x, t seconden na een stap in de waterstand.
+
+        Nog niet beschikbaar: wordt niet aangeroepen, zie `mogelijke_erosie`.
+
+        Parameters
+        ----------
+        x : float or np.ndarray
+            Afstand tot het intredepunt [m].
+        t : np.ndarray
+            Tijd sinds de stap in de waterstand [s].
+        settings : PipingSettings
+            Instellingen voor piping berekeningen.
+
+        Returns
+        -------
+        np.ndarray
+            Eenheidsrespons [-], met de vorm van t.
+        """
+        # TODO: cv_al wordt hier gelezen, maar is met ticket 03 uit PipingSettings
+        # gehaald. Zet cv_al terug (attribuut, invoer en controle) voor gebruik.
+        # TODO: m_v = 1e-5 staat hier inline (k / 1e-5 / 9.81). Maak het een invoer.
+        cv_aq = settings.k / 1e-5 / 9.81  # m2/s, benadering
+        # TODO: het argument van tanh heeft de eenheid meter en mist D_al.
+        term3 = np.sqrt(1 / 2 * settings.cv_al * t)
+        term0 = 1 / (2 * cv_aq * t)
+        term1 = settings.k_al / np.tanh(term3)
+        term2 = settings.k * settings.D * np.sqrt(2 * settings.cv_al * t)
+        lambda_t = 1 / np.sqrt(term0 + term1 / term2)
+
+        return np.exp(-x / lambda_t)
+
+    @staticmethod
+    def stijghoogte_superpositie_barends(
+        waterstandsverloop: np.ndarray, settings: PipingSettings
+    ) -> np.ndarray:
+        """
+        Stijghoogteverloop door superpositie van eenheidsresponsen (Barends).
+
+        Nog niet beschikbaar: wordt niet aangeroepen, zie `mogelijke_erosie`.
+
+        Parameters
+        ----------
+        waterstandsverloop : np.ndarray
+            Waterstandsverloop [m+NAP], vorm n x 1.
+        settings : PipingSettings
+            Instellingen voor piping berekeningen, met een tijdrooster.
+
+        Returns
+        -------
+        np.ndarray
+            Stijghoogteverloop [m+NAP], vorm n x 1.
+        """
+        # TODO: dit rekent één sample per aanroep. Maak het geschikt voor batches.
+        # TODO: geheugen. De matrices R en dphi_x_t zijn beide N x N float64,
+        # samen 16 * N**2 bytes bij N tijdstappen (ca. 1.6 GB bij 10.000 stappen).
+        timesteps = settings.timegrid * 3600
+        N = waterstandsverloop.shape[0]
+        R = np.zeros(shape=(N, N))
+        dphi_x_t = np.zeros(shape=(N, N))
+
+        # TODO: x en phi0 zijn placeholders (settings.L en settings.h_exit).
+        x = settings.L
+        phi0 = settings.h_exit
+
+        for i in range(1, N):
+            dh = waterstandsverloop[i] - waterstandsverloop[i - 1]
+
+            tau = timesteps - timesteps[i]
+            tau[tau < 10e-20] = 10e-20
+            R[i, :] = PipingEquations.unit_respons(x, tau, settings).flatten()
+            dphi_x_t[i, :] = dh * R[i, :]
+            dphi_x_t[i, timesteps.flatten() < timesteps[i, 0]] = 0
+
+        phi_x_t_totaal = np.nansum(dphi_x_t, axis=0) + phi0
+
+        return phi_x_t_totaal.reshape((N, 1))
+
+    @staticmethod
     def mogelijke_erosie(
         h_timeseries: np.ndarray, l_pipe: np.ndarray, settings: PipingSettings
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -999,6 +1081,9 @@ class PipingEquations:
             stijghoogteverloop = PipingEquations.stijghoogte_TRWD_4A(
                 h_timeseries, settings
             )
+        # TODO: voeg hier "superpositie_barends" toe met
+        # stijghoogte_superpositie_barends(h_timeseries, settings), zodra die af is.
+        # PipingSettings._check_methode_stijghoogte laat de naam dan weer toe.
         else:
             raise ValueError("Onjuiste methode stijghoogte")
 

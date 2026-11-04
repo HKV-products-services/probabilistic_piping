@@ -5,6 +5,9 @@ from pydantic.dataclasses import dataclass
 
 from probabilistic_piping.piping_equations import PipingEquations
 
+# Stijghoogte methodes die beschikbaar zijn
+METHODES_STIJGHOOGTE = ("responsfactor", "responsfactor_phi_gem", "TRWD_4A")
+
 
 @dataclass(config={"arbitrary_types_allowed": True})
 class PipingSettings:
@@ -157,6 +160,8 @@ class PipingSettings:
         """
         Post-initialization to set up attributes and their dimensions.
         """
+        self._check_methode_stijghoogte(self.methode_stijghoogte)
+
         # Determine attributes which need to be checked, store info in a dict
         # Instellingen die niet per sample worden uitgebreid
         ignore = [
@@ -182,6 +187,28 @@ class PipingSettings:
             self.__attrs[attr] = (val, ndim)
 
         self.__ignore = ignore
+
+    @staticmethod
+    def _check_methode_stijghoogte(methode: str) -> None:
+        """
+        Controleer of de stijghoogte methode beschikbaar is.
+
+        Raises
+        ------
+        NotImplementedError
+            Als de methode "superpositie_barends" is, die nog niet beschikbaar is.
+        ValueError
+            Als de methode onbekend is.
+        """
+        if methode == "superpositie_barends":
+            raise NotImplementedError(
+                "methode_stijghoogte 'superpositie_barends' is nog niet beschikbaar"
+            )
+        if methode not in METHODES_STIJGHOOGTE:
+            raise ValueError(
+                f"methode_stijghoogte {methode!r} is onbekend, kies uit "
+                f"{', '.join(METHODES_STIJGHOOGTE)}"
+            )
 
     def set_params_fromdict(
         self,
@@ -225,8 +252,12 @@ class PipingSettings:
         Raises
         ------
         ValueError
-            If the attribute name is unknown.
+            If the attribute name is unknown, or methode_stijghoogte is unknown.
+        NotImplementedError
+            If methode_stijghoogte is "superpositie_barends".
         """
+        if attr == "methode_stijghoogte":
+            self._check_methode_stijghoogte(val)
         if hasattr(self, attr):
             ndim = np.ndim(val)
             if attr not in self.__ignore:
