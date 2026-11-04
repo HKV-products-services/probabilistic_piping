@@ -375,20 +375,34 @@ class PipingSettings:
             Buitenwaterstand op de tijdstippen [m+NAP].
         dt : float or None, optional
             Tijdstap [uur] waarmee de reeks wordt geinterpoleerd, by default None
-            (de reeks blijft zoals opgegeven).
+            (de reeks blijft zoals opgegeven). De reeks eindigt exact op het
+            laatste opgegeven tijdstip. Past dt niet een geheel aantal keren in de
+            reeks, dan is de laatste stap korter.
 
         Raises
         ------
         ValueError
-            Als tijd en waterstand niet even lang zijn.
+            Als tijd en waterstand niet even lang zijn, als er minder dan 2
+            punten zijn, als de tijdstippen niet strikt stijgen of als dt niet
+            positief is.
         """
         tijd = np.asarray(tijd, dtype=np.float64).reshape(-1, 1)
         waterstand = np.asarray(waterstand, dtype=np.float64).reshape(-1, 1)
         if tijd.shape != waterstand.shape:
             raise ValueError("Tijd en waterstand arrays zijn niet even lang")
+        if len(tijd) < 2:
+            raise ValueError("Een waterstandsreeks heeft minimaal 2 punten nodig")
+        if not np.all(np.diff(tijd[:, 0]) > 0):
+            raise ValueError("Tijdstippen moeten strikt stijgend zijn")
+        if dt is not None and not dt > 0:
+            raise ValueError("dt moet groter dan 0 zijn")
 
         if dt is not None:
-            t_new = np.arange(tijd[0, 0], tijd[-1, 0] + dt, dt)
+            # Het rooster stopt exact op het laatste tijdstip, zonder extrapolatie.
+            # Een punt dat door afronding vlak bij het einde valt vervalt.
+            t_end = tijd[-1, 0]
+            t_new = np.arange(tijd[0, 0], t_end, dt)
+            t_new = np.append(t_new[t_end - t_new > 1e-9 * dt], t_end)
             waterstand = PipingEquations.inextrp1d(
                 t_new, tijd[:, 0], waterstand[:, 0]
             ).reshape(-1, 1)

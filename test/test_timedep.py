@@ -213,6 +213,90 @@ def test_set_waterstand_tijdreeks_dt():
         settings.set_waterstand_tijdreeks([0.0, 1.0], [0.0])
 
 
+# De reeks stopt op het laatste tijdstip, ook als dt niet past
+@pytest.mark.parametrize("dt", [7.0, 0.7])
+def test_set_waterstand_tijdreeks_dt_not_dividing(dt):
+    settings = PipingSettings()
+    settings.set_waterstand_tijdreeks(*_hydrograph(10.0), dt=dt)
+    t, h = settings.timegrid[:, 0], settings.h_timeseries[:, 0]
+
+    assert t[-1] == 60.0
+    assert h[-1] == 0.0
+    assert (h >= 0).all()
+    assert (np.diff(t) > 0).all()
+    assert np.allclose(np.diff(t)[:-1], dt)
+    assert 0 < np.diff(t)[-1] < dt
+    if dt == 7.0:
+        assert np.isclose(np.diff(t)[-1], 4.0)
+
+
+# Past dt precies, dan komt er geen extra stap bij
+@pytest.mark.parametrize("dt, n", [(0.1, 601), (0.25, 241), (0.3, 201)])
+def test_set_waterstand_tijdreeks_dt_dividing(dt, n):
+    settings = PipingSettings()
+    settings.set_waterstand_tijdreeks(*_hydrograph(10.0), dt=dt)
+
+    assert len(settings.timegrid) == n
+    assert settings.timegrid[-1, 0] == 60.0
+    assert np.allclose(np.diff(settings.timegrid[:, 0]), dt)
+
+
+# Een afrondingsfout geeft geen tijdstip voorbij het einde en geen dubbel tijdstip
+@pytest.mark.parametrize(
+    "t_end, dt, n",
+    [
+        (0.3, 0.1, 4),  # 3 * 0.1 is in floating point net groter dan 0.3
+        (2.1, 0.3, 8),  # np.arange(0, 2.1, 0.3) eindigt al op 2.1
+    ],
+)
+def test_set_waterstand_tijdreeks_dt_rounding(t_end, dt, n):
+    settings = PipingSettings()
+    settings.set_waterstand_tijdreeks([0.0, t_end], [0.0, 3.0], dt=dt)
+
+    assert len(settings.timegrid) == n
+    assert settings.timegrid[-1, 0] == t_end
+    assert np.allclose(np.diff(settings.timegrid[:, 0]), dt)
+    assert settings.h_timeseries[-1, 0] == 3.0
+
+
+# Zonder dt blijft de reeks zoals opgegeven
+def test_set_waterstand_tijdreeks_without_dt():
+    t, h = _hydrograph(10.0)
+    settings = PipingSettings()
+    settings.set_waterstand_tijdreeks(t, h)
+
+    assert settings.timegrid.shape == (len(t), 1)
+    assert np.array_equal(settings.timegrid[:, 0], t)
+    assert np.array_equal(settings.h_timeseries[:, 0], h)
+
+
+# Een ongeldige reeks of dt geeft een foutmelding
+@pytest.mark.parametrize(
+    "t, h, dt",
+    [
+        ([0.0], [1.0], None),
+        ([0.0, 1.0, 1.0], [0.0, 1.0, 0.0], None),
+        ([0.0, 2.0, 1.0], [0.0, 1.0, 0.0], 0.5),
+        ([0.0, 1.0, 2.0], [0.0, 1.0, 0.0], 0.0),
+        ([0.0, 1.0, 2.0], [0.0, 1.0, 0.0], -1.0),
+    ],
+)
+def test_set_waterstand_tijdreeks_invalid(t, h, dt):
+    with pytest.raises(ValueError):
+        PipingSettings().set_waterstand_tijdreeks(t, h, dt=dt)
+
+
+# Een berekening met dt geeft de piek als waterstand
+def test_timedep_with_dt_uses_peak():
+    inp = ProbInput.from_dataframe(_input_df(("geen stochast", 1e6)))
+    inp.calc_options.update(MC_2000)
+    ot.RandomGenerator.SetSeed(1)
+    prob = ProbPipingTimeDepWaterlevel()
+    res = prob.timedep_waterlevel_failureprobability(inp, *_hydrograph(10.0), dt=0.5)[1]
+
+    assert res.h == 10.0
+
+
 # Het resultaat van de pipelengte-ontwikkeling heeft namen en blijft uitpakbaar
 def test_pipelengte_ontwikkeling_result_fields():
     t, h = _hydrograph(10.0, plateau=3)
