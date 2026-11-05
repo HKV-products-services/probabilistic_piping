@@ -4,10 +4,20 @@ import numpy as np
 import openturns as ot
 from pydantic import validate_call
 
-from probabilistic_piping.piping_equations import PipingEquations
+from probabilistic_piping.piping_equations import (
+    PipingEquations,
+    _check_growth_inputs,
+    pipe_growth,
+)
 from probabilistic_piping.piping_settings import PipingSettings
 from probabilistic_piping.probabilistic_base import ProbPipingBase, RelevantStochasts
 from probabilistic_piping.probabilistic_io import ProbInput, ProbResult
+
+
+def _z_pipelengte(settings: PipingSettings) -> float | np.ndarray:
+    """Verbind pipegroei aan de scalaire/batchinterface van de solver."""
+    z = 1 - pipe_growth(settings).l_end / np.atleast_1d(settings.L)
+    return float(z[0]) if np.ndim(settings.L) == 0 else z
 
 
 class ProbPipingTimeDepWaterlevel(ProbPipingBase):
@@ -74,7 +84,7 @@ class ProbPipingTimeDepWaterlevel(ProbPipingBase):
             settings_dict = {**prob_input.params}
         settings.set_params_fromdict(settings_dict)
         self.piping_eq.check_stijghoogte(settings, set(prob_input.stochasts))
-        self.piping_eq.check_pipegroei(settings, set(prob_input.stochasts))
+        _check_growth_inputs(settings, set(prob_input.stochasts))
 
         # Zet de waterstandsreeks. De piek is de waterstand voor de resultaten.
         settings.set_waterstand_tijdreeks(timegrid, h_timeseries, dt=dt)
@@ -84,7 +94,7 @@ class ProbPipingTimeDepWaterlevel(ProbPipingBase):
         settings, results = self.prob_calculation(
             h,
             "timedep_piping",
-            PipingEquations.z_pipelengte,
+            _z_pipelengte,
             settings,
             prob_input,
             copula=copula,

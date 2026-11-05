@@ -1,6 +1,10 @@
 __version__ = "0.0.8"
 
-from probabilistic_piping.piping_equations import PipingEquations
+from probabilistic_piping.piping_equations import (
+    PipeGrowth,
+    PipingEquations,
+    pipe_growth,
+)
 from probabilistic_piping.piping_settings import PipingSettings
 from probabilistic_piping.probabilistic_base import ProbPipingBase, RelevantStochasts
 from probabilistic_piping.probabilistic_fixedwl import (
@@ -20,4 +24,6 @@ __all__ = [
     "ProbPipingFixedWaterlevel",
     "ProbPipingFixedWaterlevelSimple",
     "ProbPipingTimeDepWaterlevel",
+    "PipeGrowth",
+    "pipe_growth",
 ]

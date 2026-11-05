@@ -88,12 +88,12 @@ class PipingSettings:
     dldt_modeltype : str or None
         Model voor de pipegroeisnelheid ("constant", "Pol2019" of "Pol2022"),
         verplicht voor timedep berekeningen, by default None. Geldt voor alle
-        samples. Referenties: zie `PipingEquations.progressiesnelheid`.
+        samples. Referenties: zie `pipe_growth`.
     dldt_constant : float or np.ndarray
         Constante pipegroeisnelheid, bij "constant" [m/s].
     dldt_Ce : float or np.ndarray
         Groeicoefficient, bij "Pol2022" [-]. Referenties: zie
-        `PipingEquations.progressiesnelheid`.
+        `pipe_growth`.
     dldt_kezdi_C : float or np.ndarray
         Constante C in de formule van Kezdi, bij "Pol2019" [-].
     dldt_kezdi_mv : float or np.ndarray

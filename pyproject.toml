@@ -16,6 +16,7 @@ include = ["src/probabilistic_piping", "src/README.md", "LICENSE"]
 name = "probabilistic_piping"
 dynamic = ["version"]
 description = "Python package for probabilistic piping calculations"
+requires-python = ">=3.11"
 readme = "src/README.md"
 license = "GPL-3.0-only"
 authors = [
@@ -27,8 +28,9 @@ authors = [
 
 dependencies = [
   "numpy",
+  "numba>=0.68",
   "pandas",
-  "openturns>=1.23",
+  "openturns>=1.27",
   "pydantic",
   "tqdm",
 ]
@@ -37,9 +39,34 @@ dependencies = [
 Documentation = "https://hkv-products-services.github.io/probabilistic_piping"
 Source = "https://github.com/HKV-products-services/probabilistic_piping"
 
+[dependency-groups]
+dev = [
+  "ipykernel",
+  "ipywidgets",
+  "matplotlib",
+  "nbclient",
+  "nbformat",
+  "openpyxl>=3.1.5",
+  "pre-commit",
+  "pytest",
+  "pytest-cov",
+  "quartodoc>=0.9.1",
+  "griffe<2",
+  "ruff>=0.8.1",
+]
+
+[tool.ruff.lint]
+# Keep the existing Ruff/pre-commit checks explicit across tool upgrades.
+select = ["E4", "E7", "E9", "F"]
+
 [tool.pixi.workspace]
 channels = ["conda-forge"]
-platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
+platforms = [
+  "win-64",
+  "linux-64",
+  # Match the OpenTURNS PyPI wheel's minimum supported macOS version.
+  { platform = "osx-arm64", macos = "14.0" },
+]
 
 [tool.pixi.tasks]
 # Installation
@@ -66,29 +93,11 @@ pre-commit = "pre-commit run --all-files"
 #pytest-cov = "pytest --cov --cov-report html:test/test_cov"
 pytest-cov = "pytest --cov"
 
-[tool.pixi.feature.common.dependencies]
-python = ">=3.11"
-ipykernel ="*"
-ipywidgets ="*"
-matplotlib ="*"
-nbclient ="*"
-nbformat ="*"
-numpy ="*"
-openpyxl = ">=3.1.5"
-openturns = ">=1.27,<2"
-pandas ="*"
-pre-commit = "*"
-pydantic = "*"
-pytest ="*"
-pytest-cov = "*"
+[tool.pixi.dependencies]
 quarto = ">=1.5.57"
-quartodoc = ">=0.9.1"
-griffe = "<2"
-ruff = ">=0.8.1"
-tqdm = "*"
 
-[tool.pixi.feature.common.pypi-dependencies]
+[tool.pixi.pypi-dependencies]
 probabilistic_piping = { path = ".", editable = true }
 
 [tool.pixi.environments]
-default = { features = ["common"] }
+default = { features = ["dev"] }

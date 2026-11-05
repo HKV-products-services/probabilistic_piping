@@ -9,13 +9,15 @@ import pandas as pd
 import pytest
 
 from probabilistic_piping import (
-    PipingEquations,
     PipingSettings,
     ProbInput,
     ProbPipingFixedWaterlevel,
     ProbPipingTimeDepWaterlevel,
     RelevantStochasts,
+    pipe_growth,
 )
+from probabilistic_piping.probabilistic_timedep import _z_pipelengte
+from probabilistic_piping.piping_equations import _check_growth_inputs
 
 # Instellingen zonder stochast: Pol2022, geen beginpipe en geen interventie
 GROWTH_FIXED = {
@@ -170,13 +172,13 @@ def test_z_pipelengte_scalar_equals_batch():
 
     settings = new_settings()
     settings.set_params_fromdict({k: X[:, j] for j, k in enumerate(names)})
-    z_batch = PipingEquations.z_pipelengte(settings)
+    z_batch = _z_pipelengte(settings)
     assert (z_batch < 0).any()
 
     for row, z_expected in zip(X, z_batch):
         settings = new_settings()
         settings.set_params_fromdict({k: float(v) for k, v in zip(names, row)})
-        z = PipingEquations.z_pipelengte(settings)
+        z = _z_pipelengte(settings)
         assert isinstance(z, float)
         assert np.isclose(z, z_expected, rtol=1e-12, atol=1e-12)
 
@@ -297,15 +299,15 @@ def test_timedep_with_dt_uses_peak():
     assert res.h == 10.0
 
 
-# Het resultaat van de pipelengte-ontwikkeling heeft namen en blijft uitpakbaar
-def test_pipelengte_ontwikkeling_result_fields():
+# Dezelfde matrixvorm voor één sample en voor een batch, met benoemde resultaten.
+def test_pipe_growth_result_fields():
     t, h = _hydrograph(10.0, plateau=3)
     settings = PipingSettings()
     settings.set_params_fromdict(
         ProbInput.from_dataframe(_input_df(("geen stochast", 0.1))).params
     )
     settings.set_waterstand_tijdreeks(t, h)
-    result = PipingEquations.pipelengte_ontwikkeling(settings)
+    result = pipe_growth(settings)
 
     assert result._fields == (
         "l_end",
@@ -322,7 +324,7 @@ def test_pipelengte_ontwikkeling_result_fields():
     l_end, l_time, *_, t_fail = result
     assert l_end is result.l_end
     assert t_fail is result.t_fail
-    assert l_time[0].shape == (len(t), 1)
+    assert l_time.shape == (len(t), 1)
 
 
 # Barends is nog niet beschikbaar, ook niet in een timedep berekening
@@ -398,12 +400,12 @@ def test_z_pipelengte_stochastic_l_ini_scalar_equals_batch():
         return settings
 
     columns = {k: X[:, j] for j, k in enumerate(names)}
-    z_batch = PipingEquations.z_pipelengte(new_settings({**columns, "l_ini": l_ini}))
+    z_batch = _z_pipelengte(new_settings({**columns, "l_ini": l_ini}))
     assert 0.2 < (z_batch < 0).mean() < 0.8
 
     for i, z_expected in enumerate(z_batch):
         values = {k: float(v[i]) for k, v in columns.items()}
-        z = PipingEquations.z_pipelengte(new_settings({**values, "l_ini": l_ini[i]}))
+        z = _z_pipelengte(new_settings({**values, "l_ini": l_ini[i]}))
         assert np.isclose(z, z_expected, rtol=1e-12, atol=1e-12)
 
 
@@ -434,8 +436,8 @@ def test_growth_input_check_skips_stochasts():
     settings = PipingSettings(dldt_modeltype="Pol2022", l_ini=0.0)
 
     with pytest.raises(ValueError, match="dldt_Ce"):
-        PipingEquations.check_pipegroei(settings)
-    PipingEquations.check_pipegroei(settings, {"dldt_Ce"})
+        _check_growth_inputs(settings)
+    _check_growth_inputs(settings, {"dldt_Ce"})
 
 
 # Zonder falen is de kans nul, met de melding van een simulatie zonder falen
@@ -489,9 +491,9 @@ def _z_intervention(detect=True):
     names = [k for k in RelevantStochasts().timedep_piping if k in inp.stochasts]
     means = {k: np.full(len(ih), inp.stochasts[k].getMean()[0]) for k in names}
     settings.set_params_fromdict({**means, "intervention_hours": ih})
-    PipingEquations.check_pipegroei(settings, set(inp.stochasts))
+    _check_growth_inputs(settings, set(inp.stochasts))
     settings.set_param("detect_true", detect, verify_integrity=False)
-    growth = PipingEquations.pipelengte_ontwikkeling(settings)
+    growth = pipe_growth(settings)
     return ih, 1 - growth.l_end / settings.L, growth
 
 
@@ -556,7 +558,7 @@ def test_intervention_after_heave_adds_no_growth():
         settings.set_waterstand_tijdreeks(t, h)
         settings.set_params_fromdict({**means, "intervention_hours": ih})
         settings.set_param("detect_true", detect, verify_integrity=False)
-        l_end[detect] = PipingEquations.pipelengte_ontwikkeling(settings).l_end
+        l_end[detect] = pipe_growth(settings).l_end
 
     assert np.array_equal(l_end[True], l_end[False])
 
@@ -585,7 +587,7 @@ def test_detect_true_accepted(value):
         dldt_modeltype="Pol2022", l_ini=0.0, dldt_Ce=1.0, intervention_hours=5.0
     )
     settings.set_param("detect_true", value, verify_integrity=False)
-    PipingEquations.check_pipegroei(settings)
+    _check_growth_inputs(settings)
 
     assert settings.detect_true is bool(value)
 
@@ -598,7 +600,7 @@ def test_detect_true_invalid(value):
     settings.set_param("detect_true", value, verify_integrity=False)
 
     with pytest.raises(ValueError, match="detect_true"):
-        PipingEquations.check_pipegroei(settings)
+        _check_growth_inputs(settings)
 
 
 # detect_true als stochast, of detectie zonder interventietijd, geeft een fout
@@ -606,12 +608,12 @@ def test_detect_true_stochast_and_missing_hours_raise():
     settings = PipingSettings(dldt_modeltype="Pol2022", l_ini=0.0, dldt_Ce=1.0)
 
     with pytest.raises(ValueError, match="detect_true"):
-        PipingEquations.check_pipegroei(settings, {"detect_true"})
-    PipingEquations.check_pipegroei(settings)
+        _check_growth_inputs(settings, {"detect_true"})
+    _check_growth_inputs(settings)
     settings.set_param("detect_true", True, verify_integrity=False)
     with pytest.raises(ValueError, match="intervention_hours"):
-        PipingEquations.check_pipegroei(settings)
-    PipingEquations.check_pipegroei(settings, {"intervention_hours"})
+        _check_growth_inputs(settings)
+    _check_growth_inputs(settings, {"intervention_hours"})
 
 
 @pytest.mark.parametrize(

@@ -18,3 +18,9 @@ Once Pixi is installed, checkout the source code from the repository and run the
 ```bash
   pixi install
 ```
+
+Python support is declared once in `project.requires-python`. Runtime Python
+dependencies live in `project.dependencies`, and development tools live in
+`dependency-groups.dev`. Pixi installs these from PyPI and locks their versions.
+It provisions the Python interpreter and Quarto through conda-forge. Supported
+development platforms are Windows x86-64, Linux x86-64 and macOS ARM64 (14+).
