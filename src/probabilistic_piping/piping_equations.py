@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Set
 from typing import TYPE_CHECKING, NamedTuple
 
 import numpy as np
@@ -573,7 +574,7 @@ class PipingEquations:
 
     @classmethod
     def check_stijghoogte(
-        cls, settings: PipingSettings, stochasts: set[str] = frozenset()
+        cls, settings: PipingSettings, stochasts: Set[str] = frozenset()
     ) -> None:
         """
         Controleer of de invoer van de gekozen stijghoogte methode geldig is.
@@ -616,9 +617,7 @@ class PipingEquations:
                 )
 
         lengths = ["L_vl", "L_al", "L_dijkbasis"]
-        if settings.methode_stijghoogte == "TRWD_4A" and not stochasts.intersection(
-            lengths
-        ):
+        if settings.methode_stijghoogte == "TRWD_4A" and stochasts.isdisjoint(lengths):
             if all((np.asarray(getattr(settings, n)) == 0).all() for n in lengths):
                 raise ValueError(
                     "'L_vl', 'L_al' en 'L_dijkbasis' zijn alle drie nul voor "
@@ -658,7 +657,10 @@ class PipingEquations:
 
     @staticmethod
     def unit_respons(
-        x: float | np.ndarray, t: np.ndarray, settings: PipingSettings
+        x: float | np.ndarray,
+        t: np.ndarray,
+        settings: PipingSettings,
+        cv_al: float | np.ndarray,
     ) -> np.ndarray:
         """
         Eenheidsrespons van de stijghoogte op afstand x, t seconden na een stap in de waterstand.
@@ -673,28 +675,32 @@ class PipingEquations:
             Tijd sinds de stap in de waterstand [s].
         settings : PipingSettings
             Instellingen voor piping berekeningen.
+        cv_al : float or np.ndarray
+            Consolidatiecoefficient deklaag achterland [m^2/s].
 
         Returns
         -------
         np.ndarray
             Eenheidsrespons [-], met de vorm van t.
         """
-        # TODO: cv_al wordt hier gelezen, maar is met ticket 03 uit PipingSettings
-        # gehaald. Zet cv_al terug (attribuut, invoer en controle) voor gebruik.
+        # TODO: cv_al is met ticket 03 uit PipingSettings gehaald en is daarom een
+        # argument. Zet cv_al terug (attribuut, invoer en controle) voor gebruik.
         # TODO: m_v = 1e-5 staat hier inline (k / 1e-5 / 9.81). Maak het een invoer.
         cv_aq = settings.k / 1e-5 / 9.81  # m2/s, benadering
         # TODO: het argument van tanh heeft de eenheid meter en mist D_al.
-        term3 = np.sqrt(1 / 2 * settings.cv_al * t)
+        term3 = np.sqrt(1 / 2 * cv_al * t)
         term0 = 1 / (2 * cv_aq * t)
         term1 = settings.k_al / np.tanh(term3)
-        term2 = settings.k * settings.D * np.sqrt(2 * settings.cv_al * t)
+        term2 = settings.k * settings.D * np.sqrt(2 * cv_al * t)
         lambda_t = 1 / np.sqrt(term0 + term1 / term2)
 
         return np.exp(-x / lambda_t)
 
     @staticmethod
     def stijghoogte_superpositie_barends(
-        waterstandsverloop: np.ndarray, settings: PipingSettings
+        waterstandsverloop: np.ndarray,
+        settings: PipingSettings,
+        cv_al: float | np.ndarray,
     ) -> np.ndarray:
         """
         Stijghoogteverloop door superpositie van eenheidsresponsen (Barends).
@@ -707,6 +713,9 @@ class PipingEquations:
             Waterstandsverloop [m+NAP], vorm n x 1.
         settings : PipingSettings
             Instellingen voor piping berekeningen, met een tijdrooster.
+        cv_al : float or np.ndarray
+            Consolidatiecoefficient deklaag achterland [m^2/s], zie
+            `unit_respons`.
 
         Returns
         -------
@@ -716,6 +725,10 @@ class PipingEquations:
         # TODO: dit rekent één sample per aanroep. Maak het geschikt voor batches.
         # TODO: geheugen. De matrices R en dphi_x_t zijn beide N x N float64,
         # samen 16 * N**2 bytes bij N tijdstappen (ca. 1.6 GB bij 10.000 stappen).
+        if settings.timegrid.size == 0:
+            raise ValueError(
+                "Zet eerst de waterstandsreeks met set_waterstand_tijdreeks"
+            )
         timesteps = settings.timegrid * 3600
         N = waterstandsverloop.shape[0]
         R = np.zeros(shape=(N, N))
@@ -730,7 +743,7 @@ class PipingEquations:
 
             tau = timesteps - timesteps[i]
             tau[tau < 10e-20] = 10e-20
-            R[i, :] = PipingEquations.unit_respons(x, tau, settings).flatten()
+            R[i, :] = PipingEquations.unit_respons(x, tau, settings, cv_al).flatten()
             dphi_x_t[i, :] = dh * R[i, :]
             dphi_x_t[i, timesteps.flatten() < timesteps[i, 0]] = 0
 
@@ -1183,20 +1196,24 @@ class PipeGrowth(NamedTuple):
 
 
 def _check_growth_inputs(
-    settings: PipingSettings, stochasts: set[str] = frozenset()
-) -> None:
-    """Controleer vaste groei-invoer; stochasts worden na sampling ingevuld."""
+    settings: PipingSettings, stochasts: Set[str] = frozenset()
+) -> str:
+    """Controleer vaste groei-invoer; stochasts worden na sampling ingevuld.
+
+    Geeft het gecontroleerde groeimodel (`dldt_modeltype`) terug.
+    """
     required = {
         "constant": ["dldt_constant"],
         "Pol2019": ["dldt_kezdi_C", "dldt_kezdi_mv", "n_aq"],
         "Pol2022": ["dldt_Ce"],
     }
-    if settings.dldt_modeltype not in required:
+    modeltype = settings.dldt_modeltype
+    if modeltype not in required:
         raise ValueError(
-            f"'dldt_modeltype' is {settings.dldt_modeltype!r}, maar moet een van "
+            f"'dldt_modeltype' is {modeltype!r}, maar moet een van "
             f"{', '.join(required)} zijn"
         )
-    for name in ["l_ini"] + required[settings.dldt_modeltype]:
+    for name in ["l_ini"] + required[modeltype]:
         if name in stochasts:
             continue
         value = np.asarray(getattr(settings, name), dtype=float)
@@ -1226,6 +1243,7 @@ def _check_growth_inputs(
         raise ValueError(
             "'intervention_hours' is NaN, maar is nodig als 'detect_true' aan staat"
         )
+    return modeltype
 
 
 def pipe_growth(settings: PipingSettings) -> PipeGrowth:
@@ -1258,13 +1276,13 @@ def pipe_growth(settings: PipingSettings) -> PipeGrowth:
     - Pol, J.C., Noordam, A. and Kanning, W. (2024). A 3D time-dependent
       backward erosion piping model. *Computers and Geotechnics*.
     """
-    if settings.timegrid is None or settings.h_timeseries is None:
+    if settings.timegrid.size == 0:
         raise ValueError("Zet eerst de waterstandsreeks met set_waterstand_tijdreeks")
     # Eén scalair sample wordt dezelfde batchvorm als ieder ander sample.
     if np.ndim(settings.L) == 0:
         settings = settings.copy()
         settings.set_param("L", np.atleast_1d(settings.L))
-    _check_growth_inputs(settings)
+    modeltype = _check_growth_inputs(settings)
     PipingEquations.check_stijghoogte(settings)
 
     time = settings.timegrid[:, 0]
@@ -1276,56 +1294,63 @@ def pipe_growth(settings: PipingSettings) -> PipeGrowth:
     else:  # PipingSettings en check_stijghoogte controleren de methode.
         phi = PipingEquations.stijghoogte_TRWD_4A(waterlevel, settings)
 
+    # Na de batchvorm is iedere modelparameter een array; asarray maakt dat
+    # zichtbaar voor de typecontrole en kopieert niets.
+    arr = np.asarray
+    L = arr(settings.L)
+
     # Fysische grootheden één keer per sample, vóór de tijdintegratie.
-    l_initial = settings.l_ini * settings.L
-    lc = settings.L * 0.5 * np.tanh(2 * settings.D / settings.L)
-    Hc = settings.m_p * PipingEquations.H_c(settings)
-    delta_phi = PipingEquations.delta_phi_cu(settings)
+    l_initial = arr(settings.l_ini * L)
+    lc = L * 0.5 * np.tanh(2 * arr(settings.D) / L)
+    Hc = arr(settings.m_p * PipingEquations.H_c(settings))
+    delta_phi = arr(PipingEquations.delta_phi_cu(settings))
     can_erode = erosion_potential(
         np.max(phi, axis=0),
         float(np.max(waterlevel)),
         l_initial,
-        settings.L,
+        L,
         lc,
         Hc,
-        settings.m_u,
+        arr(settings.m_u),
         delta_phi,
-        settings.h_exit,
-        settings.i_ch,
-        settings.D_cover,
-        settings.r_c,
+        arr(settings.h_exit),
+        arr(settings.i_ch),
+        arr(settings.D_cover),
+        arr(settings.r_c),
     )
-    Z_uplift = PipingEquations._Z_u(settings.m_u, delta_phi, phi, settings.h_exit)
-    Z_heave = PipingEquations._Z_h(
-        settings.i_ch, phi, settings.h_exit, settings.D_cover
+    Z_uplift = arr(PipingEquations._Z_u(settings.m_u, delta_phi, phi, settings.h_exit))
+    Z_heave = arr(
+        PipingEquations._Z_h(settings.i_ch, phi, settings.h_exit, settings.D_cover)
     )
-    H = PipingEquations.verval(
-        waterlevel, settings.h_exit, settings.r_c, settings.D_cover
+    H = arr(
+        PipingEquations.verval(
+            waterlevel, settings.h_exit, settings.r_c, settings.D_cover
+        )
     )
     Z_sell = Hc - H
     H[H < 0] = 0.0
-    has_initial_pipe = settings.l_ini > 1e-6
+    has_initial_pipe = arr(settings.l_ini) > 1e-6
     lengths, rates, first, intervention = integrate_pipe_growth(
         time,
         H,
         np.maximum.accumulate(H, axis=0),
         Z_uplift,
         Z_heave,
-        settings.L,
+        L,
         lc,
         Hc,
         l_initial,
         has_initial_pipe,
         can_erode,
-        settings.dldt_modeltype,
-        settings.k,
-        settings.n_aq,
-        settings.dldt_constant,
-        settings.dldt_Ce,
-        settings.dldt_kezdi_mv,
-        settings.dldt_kezdi_C,
+        modeltype,
+        arr(settings.k),
+        arr(settings.n_aq),
+        arr(settings.dldt_constant),
+        arr(settings.dldt_Ce),
+        arr(settings.dldt_kezdi_mv),
+        arr(settings.dldt_kezdi_C),
         bool(settings.detect_true),
-        settings.intervention_hours,
+        arr(settings.intervention_hours),
     )
 
     def first_time(mask):
@@ -1360,5 +1385,5 @@ def pipe_growth(settings: PipingSettings) -> PipeGrowth:
         first_time(Z_sell < 0),
         first,
         intervention,
-        first_time((settings.L - lengths) < 0),
+        first_time((L - lengths) < 0),
     )

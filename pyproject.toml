@@ -46,13 +46,17 @@ dev = [
   "matplotlib",
   "nbclient",
   "nbformat",
+  "nbstripout>=0.8.1",
   "openpyxl>=3.1.5",
-  "pre-commit",
+  "pre-commit>=4.4",
+  "pre-commit-hooks>=5.0.0",
   "pytest",
   "pytest-cov",
   "quartodoc>=0.9.1",
   "griffe<2",
   "ruff>=0.8.1",
+  "mypy>=1.13",
+  "pandas-stubs>=3.1.0.261029,<4",
 ]
 
 [tool.ruff.lint]
@@ -101,3 +105,9 @@ probabilistic_piping = { path = ".", editable = true }
 
 [tool.pixi.environments]
 default = { features = ["dev"] }
+
+[tool.mypy]
+files = ["src"]
+python_version = "3.11"
+# openturns, numba and tqdm ship without type information.
+ignore_missing_imports = true

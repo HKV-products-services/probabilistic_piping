@@ -1,6 +1,6 @@
+from collections.abc import Callable, Mapping
 from contextlib import contextmanager
 from dataclasses import field
-from typing import Callable
 
 import numpy as np
 import openturns as ot
@@ -217,7 +217,7 @@ class ProbPipingBase(BaseModel):
 
         description = list(subset_stochasten.keys())
         marginals = list(subset_stochasten.values())
-        rekentechniek = prob_input.calc_options["Rekentechniek"]
+        rekentechniek = str(prob_input.calc_options["Rekentechniek"])
 
         # OpenTURNS geeft een fout in de z-functie door als RuntimeError, net als
         # een mislukte solver. Bewaar daarom de originele fout, zodat die na een
@@ -243,7 +243,7 @@ class ProbPipingBase(BaseModel):
                 raise_z_error()
                 raise
 
-        def z_func_sample(X: np.ndarray) -> list[float]:
+        def z_func_sample(X: np.ndarray) -> list[np.ndarray | float]:
             zsettings = settings.copy()
             zsettings.set_params_fromdict({k: v for k, v in zip(description, X)})
             zval = z_func_checked(zsettings)
@@ -258,7 +258,7 @@ class ProbPipingBase(BaseModel):
                 zsettings.set_params_fromdict(
                     {k: X[:, i] for i, k in enumerate(description)}
                 )
-                zval = z_func_checked(zsettings)
+                zval = np.asarray(z_func_checked(zsettings))
             return zval[:, np.newaxis]
 
         if copula is None:
@@ -280,7 +280,7 @@ class ProbPipingBase(BaseModel):
         event.setName("Faalkans gegeven een waterstand")
 
         if rekentechniek.startswith("FORM"):
-            startmethod = prob_input.calc_options["FORM start"]
+            startmethod = str(prob_input.calc_options["FORM start"])
             with original_z_error():
                 startpoint = self.get_FORM_startpoint(
                     distribution, otzfunc, method=startmethod
@@ -385,7 +385,7 @@ class ProbPipingBase(BaseModel):
         | ot.Cobyla
         | ot.ProbabilitySimulationAlgorithm
         | ot.DirectionalSampling,
-        calc_options: dict[str, float | int],
+        calc_options: Mapping[str, float | int | str],
         debug: bool,
     ) -> None:
         """
@@ -395,7 +395,7 @@ class ProbPipingBase(BaseModel):
         ----------
         optimAlgo : ot.AbdoRackwitz or ot.Cobyla or ot.ProbabilitySimulationAlgorithm or ot.DirectionalSampling
             The optimization algorithm instance to configure.
-        calc_options : dict of str to float or int
+        calc_options : dict of str to float or int or str
             A dictionary containing the calculation options to set, where keys are option names and values are option values.
         debug : bool
             If True, print debug information about the options being set.
@@ -412,14 +412,18 @@ class ProbPipingBase(BaseModel):
             MaximumEvaluationNumber is the old name of MaximumCallsNumber (OpenTURNS < 1.24),
             MaximumCallsNumber wins if both are present.
         """
+        options = dict(calc_options)
         if hasattr(optimAlgo, "setMaximumCallsNumber"):
-            calc_options = dict(calc_options)
             limits = {}
             for name in ("MaximumEvaluationNumber", "MaximumCallsNumber"):
-                val = calc_options.pop(name, None)
+                val = options.pop(name, None)
                 if val is None:
                     continue
-                if not 1 <= val <= 2**32 - 1 or val != int(val):
+                if (
+                    not isinstance(val, int | float)
+                    or not 1 <= val <= 2**32 - 1
+                    or val != int(val)
+                ):
                     raise ValueError(
                         f"Onjuiste waarde voor {name}: {val}, "
                         "moet een geheel getal van 1 tot 4294967295 zijn"
@@ -427,8 +431,8 @@ class ProbPipingBase(BaseModel):
                 limits[name] = int(val)
             # MaximumCallsNumber (laatste) wint van de oude naam
             if limits:
-                calc_options["MaximumCallsNumber"] = list(limits.values())[-1]
-        for option_name, option_val in calc_options.items():
+                options["MaximumCallsNumber"] = list(limits.values())[-1]
+        for option_name, option_val in options.items():
             attr_name = f"set{option_name}"
             if hasattr(optimAlgo, attr_name):
                 getattr(optimAlgo, attr_name)(option_val)
@@ -439,7 +443,7 @@ class ProbPipingBase(BaseModel):
     def get_FORM_startpoint(
         distribution: ot.JointDistribution,
         otzfunc: ot.PythonFunction,
-        method="slice",
+        method: str = "slice",
     ) -> list[float]:
         """
         Get the starting point for the FORM analysis.
@@ -469,9 +473,9 @@ class ProbPipingBase(BaseModel):
             ]
             initial_points, zvals = [], []
             for sp in [0.5, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7]:
-                sp = [m.computeQuantile(sp)[0] for m in marginals]
-                initial_points.append(sp)
-                zvals.append(otzfunc(sp)[0])
-            initial_point = initial_points[np.abs(zvals).argmin()]
+                point = [m.computeQuantile(sp)[0] for m in marginals]
+                initial_points.append(point)
+                zvals.append(otzfunc(point)[0])
+            initial_point = initial_points[np.argmin(np.abs(zvals))]
 
         return initial_point

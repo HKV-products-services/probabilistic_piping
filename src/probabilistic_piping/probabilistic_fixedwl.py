@@ -37,13 +37,20 @@ class ProbPipingFixedWaterlevelBase(ProbPipingBase):
     rel_stochasts: RelevantStochasts = field(default_factory=RelevantStochasts)
     piping_eq: PipingEquations = field(default_factory=PipingEquations)
 
+    @staticmethod
+    def _hlist_from_input(prob_input: ProbInput) -> list[float]:
+        """Kopie van de waterstanden uit de invoer, voor een fragility curve."""
+        if prob_input.hlist is None:
+            raise ValueError("Geef hlist op, of neem waterstanden op in prob_input")
+        return prob_input.hlist.copy()
+
     @validate_call(config=dict(arbitrary_types_allowed=True))
     def fixed_waterlevel_semiprob(
         self,
         prob_input: ProbInput,
         settings: PipingSettings | None = None,
         h: float | None = None,
-    ) -> pd.DataFrame:
+    ) -> pd.Series:
         """
         Perform semi-probabilistic calculations for a constant water level.
 
@@ -58,8 +65,8 @@ class ProbPipingFixedWaterlevelBase(ProbPipingBase):
 
         Returns
         -------
-        pd.DataFrame
-            DataFrame containing the results of the calculations.
+        pd.Series
+            Series containing the results of the calculations.
         """
         # Standaard normale verdeling
         norm = stat.NormalDist(mu=0, sigma=1)
@@ -138,9 +145,8 @@ class ProbPipingFixedWaterlevelBase(ProbPipingBase):
         result["pf_h"] = pf_h
         result["pf_p"] = pf_p
         result["pf_combi"] = pf_combi
-        result = pd.Series(result)
 
-        return result
+        return pd.Series(result)
 
 
 class ProbPipingFixedWaterlevelSimple(ProbPipingFixedWaterlevelBase):
@@ -174,7 +180,7 @@ class ProbPipingFixedWaterlevelSimple(ProbPipingFixedWaterlevelBase):
         hlist: list[float] | None = None,
         settings: PipingSettings | None = None,
         copula: ot.Distribution | None = None,
-    ) -> ProbResults:
+    ) -> tuple[PipingSettings, ProbResults, ProbResults, ProbResults, ProbResults]:
         """
         Calculate the fragility curve for a fixed water level.
 
@@ -191,8 +197,9 @@ class ProbPipingFixedWaterlevelSimple(ProbPipingFixedWaterlevelBase):
 
         Returns
         -------
-        ProbResults
-            Results of the fragility curve calculations.
+        tuple
+            Updated settings and results for uplift, heave, Sellmeijer, and
+            combined mechanisms.
         """
         results_u = ProbResults()
         results_h = ProbResults()
@@ -200,7 +207,7 @@ class ProbPipingFixedWaterlevelSimple(ProbPipingFixedWaterlevelBase):
         results_c = ProbResults()
 
         if hlist is None:
-            hlist = prob_input.hlist.copy()
+            hlist = self._hlist_from_input(prob_input)
 
         if settings is None:
             settings = PipingSettings()
@@ -234,7 +241,7 @@ class ProbPipingFixedWaterlevelSimple(ProbPipingFixedWaterlevelBase):
         settings: PipingSettings | None = None,
         copula: ot.Distribution | None = None,
         leave: bool = True,
-    ):
+    ) -> tuple[PipingSettings, ProbResult, ProbResult, ProbResult, ProbResult]:
         """
         Calculate the failure probability for a fixed water level.
 
@@ -359,7 +366,7 @@ class ProbPipingFixedWaterlevel(ProbPipingFixedWaterlevelBase):
             Updated settings and results of the fragility curve calculations.
         """
         if hlist is None:
-            hlist = prob_input.hlist.copy()
+            hlist = self._hlist_from_input(prob_input)
 
         if settings is None:
             settings = PipingSettings()

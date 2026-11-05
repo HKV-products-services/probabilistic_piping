@@ -1,4 +1,5 @@
-from typing import Self
+from collections.abc import Mapping
+from dataclasses import field
 
 import numpy as np
 from pydantic.dataclasses import dataclass
@@ -105,11 +106,12 @@ class PipingSettings:
         False. Geldt voor alle samples.
     intervention_hours : float or np.ndarray
         Aantal uren tussen het begin van het uitspoelen en de interventie [uur].
-    timegrid : np.ndarray or None
+    timegrid : np.ndarray
         Tijdstippen van de waterstandsreeks [uur], vorm n x 1. Een reeks voor
-        alle samples.
-    h_timeseries : np.ndarray or None
+        alle samples. Leeg (vorm 0 x 1) zolang er geen reeks is gezet.
+    h_timeseries : np.ndarray
         Buitenwaterstand op de tijdstippen van timegrid [m+NAP], vorm n x 1.
+        Leeg (vorm 0 x 1) zolang er geen reeks is gezet.
     """
 
     t_norm: float | np.ndarray = np.nan
@@ -154,8 +156,8 @@ class PipingSettings:
     l_ini: float | np.ndarray = np.nan
     detect_true: bool = False
     intervention_hours: float | np.ndarray = np.nan
-    timegrid: np.ndarray | None = None
-    h_timeseries: np.ndarray | None = None
+    timegrid: np.ndarray = field(default_factory=lambda: np.empty((0, 1)))
+    h_timeseries: np.ndarray = field(default_factory=lambda: np.empty((0, 1)))
 
     def __post_init__(self) -> None:
         """
@@ -190,7 +192,7 @@ class PipingSettings:
         self.__ignore = ignore
 
     @staticmethod
-    def _check_methode_stijghoogte(methode: str) -> None:
+    def _check_methode_stijghoogte(methode: object) -> None:
         """
         Controleer of de stijghoogte methode beschikbaar is.
 
@@ -213,7 +215,7 @@ class PipingSettings:
 
     def set_params_fromdict(
         self,
-        piping_dict: dict[str, float | int | str | np.ndarray],
+        piping_dict: Mapping[str, object],
         verify_integrity: bool = True,
     ) -> None:
         """
@@ -235,7 +237,7 @@ class PipingSettings:
     def set_param(
         self,
         attr: str,
-        val: float | int | str | np.ndarray,
+        val: object,
         verify_integrity: bool = True,
     ) -> None:
         """
@@ -308,7 +310,7 @@ class PipingSettings:
                 # Check that the number of elements is equal to max_val
                 assert len(val) == max_val
 
-    def copy(self, verify_integrity: bool = True) -> Self:
+    def copy(self, verify_integrity: bool = True) -> "PipingSettings":
         """
         Create a copy of the current PipingSettings object.
 
@@ -343,7 +345,9 @@ class PipingSettings:
 
         return ps
 
-    def get_partial_settings(self, i: int, verify_integrity: bool = True) -> Self:
+    def get_partial_settings(
+        self, i: int, verify_integrity: bool = True
+    ) -> "PipingSettings":
         """
         Get a partial settings object for the i-th slice.
 

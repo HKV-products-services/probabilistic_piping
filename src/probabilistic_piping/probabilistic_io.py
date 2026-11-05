@@ -1,6 +1,7 @@
 import unicodedata
+from collections.abc import Iterable
 from dataclasses import field
-from typing import Self
+from typing import Any, Self
 
 import numpy as np
 import openturns as ot
@@ -16,22 +17,22 @@ class ProbInput:
 
     Attributes
     ----------
-    params : dict[str, float| int | str] | None
-        Dictionary of deterministic parameters.
-    stochasts : dict[str, object] | None
-        Dictionary of stochastic distributions.
-    charvals : dict[str, float] | None
-        Dictionary of characteristic values.
-    calc_options : dict[str, float | int | str] | None
-        Dictionary of calculation options.
+    params : dict[str, float | int | str]
+        Dictionary of deterministic parameters, by default empty.
+    stochasts : dict[str, object]
+        Dictionary of stochastic distributions, by default empty.
+    charvals : dict[str, float]
+        Dictionary of characteristic values, by default empty.
+    calc_options : dict[str, float | int | str]
+        Dictionary of calculation options, by default empty.
     hlist : list[float] | None
         List of water levels.
     """
 
-    params: dict[str, float | int | str] | None = None
-    stochasts: dict[str, object] | None = None
-    charvals: dict[str, float] | None = None
-    calc_options: dict[str, float | int | str] | None = None
+    params: dict[str, float | int | str] = field(default_factory=dict)
+    stochasts: dict[str, object] = field(default_factory=dict)
+    charvals: dict[str, float] = field(default_factory=dict)
+    calc_options: dict[str, float | int | str] = field(default_factory=dict)
     hlist: list[float] | None = None
 
     @staticmethod
@@ -90,15 +91,21 @@ class ProbInput:
             if colname in df_cols:
                 df[colname] = pd.to_numeric(df[colname], errors="coerce")
 
-        params, dist_params, charvals, calc_options = {}, {}, {}, {}
-        hlist = []
-        for row in df.itertuples():
+        params: dict[str, float | int | str] = {}
+        stochasts: dict[str, object] = {}
+        charvals: dict[str, float] = {}
+        calc_options: dict[str, float | int | str] = {}
+        hlist: list[float] = []
+        # Spreadsheet cells have no static type. They are checked at runtime by
+        # the validate_call methods they are passed to, so typing stops here.
+        rows: Iterable[Any] = df.itertuples()
+        for row in rows:
             var_type = row.Kansverdeling.lower().strip()
             var_name = row.Index
             waarde = ProbInput._convert_str_to_num(row.Waarde)
             if var_name == "h":
                 # Add characteristic waterlevel and make list of waterlevels.
-                charvals[var_name] = waarde
+                charvals[var_name] = float(waarde)
                 rmin, rmax, rstep = float(row.Min), float(row.Max), float(row.Step)
                 hsteps = int((rmax - rmin) / rstep) + 1
                 hlist = np.linspace(rmin, rmax, hsteps).tolist()
@@ -114,8 +121,7 @@ class ProbInput:
                     ProbInput.validate_stdev(
                         var_name, row.Mean, row.Spreiding, row.Spreidingstype, row.StDev
                     )
-                # Save stochast information
-                dist_params[var_name] = (
+                stochasts[var_name] = ProbInput.create_stochast(
                     row.Kansverdeling,
                     row.Mean,
                     row.StDev,
@@ -123,17 +129,11 @@ class ProbInput:
                     row.Afknot_links,
                     row.Afknot_rechts,
                 )
-                charvals[var_name] = waarde
+                charvals[var_name] = float(waarde)
 
         # Add water level if it wasn't present in the dataframe.
         if "h" not in charvals:
             charvals["h"] = np.nan
-
-        # Save information as dictionaries
-        params = {k: v for k, v in params.items()}
-        stochasts = {k: ProbInput.create_stochast(*v) for k, v in dist_params.items()}
-        charvals = {k: v for k, v in charvals.items()}
-        calc_options = {k: v for k, v in calc_options.items()}
 
         return cls(params, stochasts, charvals, calc_options, hlist)
 
@@ -262,7 +262,7 @@ class ProbResult:
     Attributes
     h : float or None
         Water level.
-    prob_cond : float
+    prob_cond : float or None
         Conditional probability of failure.
     converged : bool
         Indicates whether the analysis has converged.
@@ -299,7 +299,7 @@ class ProbResult:
     """
 
     h: float | None = None
-    prob_cond: float = None
+    prob_cond: float | None = None
     converged: bool = False
     z_val: float | None = None
     physical_design: dict[str, float] | None = None
@@ -439,10 +439,10 @@ class ProbResult:
             if beta != 0
             else None
         )
-        up = list(direction * beta)
-        pp = distribution.getInverseIsoProbabilisticTransformation()(up)
-        up = {k: p for k, p in zip(description, up)}
-        pp = {k: p for k, p in zip(description, pp)}
+        u_point = list(direction * beta)
+        p_point = distribution.getInverseIsoProbabilisticTransformation()(u_point)
+        up = {k: p for k, p in zip(description, u_point)}
+        pp = {k: p for k, p in zip(description, p_point)}
 
         return cls(
             h,
