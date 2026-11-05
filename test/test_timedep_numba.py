@@ -99,7 +99,9 @@ def _assert_growth_equal(actual, expected, case):
     assert set(actual._fields) == reference_fields
     for name, value in actual._asdict().items():
         reference = expected[f"{prefix}{name}"]
-        if name == "dldt_avg":
+        if np.issubdtype(np.asarray(value).dtype, np.floating):
+            # pow, exp en log verschillen per platform in het laatste bit
+            # (Linux tegen Windows: tot 2e-15 relatief). NaN blijft exact.
             np.testing.assert_allclose(value, reference, rtol=1e-12, atol=0)
         else:
             np.testing.assert_array_equal(value, reference)
@@ -111,9 +113,10 @@ def _assert_solver_equal(actual, expected):
     for name, reference in expected.items():
         value = actual[name]
         if isinstance(reference, (float, dict)):
-            # Iteratieve solvers versterken afrondingsverschillen tussen builds.
-            # Status, meldingen en aantallen blijven exact gelijk.
-            assert value == pytest.approx(reference, rel=1e-9, abs=1e-12), name
+            # Iteratieve solvers versterken afrondingsverschillen tussen builds
+            # en platforms (FORM: tot 2e-9 relatief). Status, meldingen en
+            # aantallen blijven exact gelijk.
+            assert value == pytest.approx(reference, rel=1e-6, abs=1e-9), name
         else:
             assert value == reference, name
 
