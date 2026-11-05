@@ -1,6 +1,7 @@
 import unicodedata
+from collections.abc import Iterable
 from dataclasses import field
-from typing import Self
+from typing import Any, Self
 
 import numpy as np
 import openturns as ot
@@ -16,22 +17,22 @@ class ProbInput:
 
     Attributes
     ----------
-    params : dict[str, float| int | str] | None
-        Dictionary of deterministic parameters.
-    stochasts : dict[str, object] | None
-        Dictionary of stochastic distributions.
-    charvals : dict[str, float] | None
-        Dictionary of characteristic values.
-    calc_options : dict[str, float | int | str] | None
-        Dictionary of calculation options.
+    params : dict[str, float | int | str]
+        Dictionary of deterministic parameters, by default empty.
+    stochasts : dict[str, object]
+        Dictionary of stochastic distributions, by default empty.
+    charvals : dict[str, float]
+        Dictionary of characteristic values, by default empty.
+    calc_options : dict[str, float | int | str]
+        Dictionary of calculation options, by default empty.
     hlist : list[float] | None
         List of water levels.
     """
 
-    params: dict[str, float | int | str] | None = None
-    stochasts: dict[str, object] | None = None
-    charvals: dict[str, float] | None = None
-    calc_options: dict[str, float | int | str] | None = None
+    params: dict[str, float | int | str] = field(default_factory=dict)
+    stochasts: dict[str, object] = field(default_factory=dict)
+    charvals: dict[str, float] = field(default_factory=dict)
+    calc_options: dict[str, float | int | str] = field(default_factory=dict)
     hlist: list[float] | None = None
 
     @staticmethod
@@ -90,15 +91,21 @@ class ProbInput:
             if colname in df_cols:
                 df[colname] = pd.to_numeric(df[colname], errors="coerce")
 
-        params, dist_params, charvals, calc_options = {}, {}, {}, {}
-        hlist = []
-        for row in df.itertuples():
+        params: dict[str, float | int | str] = {}
+        stochasts: dict[str, object] = {}
+        charvals: dict[str, float] = {}
+        calc_options: dict[str, float | int | str] = {}
+        hlist: list[float] = []
+        # Spreadsheet cells have no static type. They are checked at runtime by
+        # the validate_call methods they are passed to, so typing stops here.
+        rows: Iterable[Any] = df.itertuples()
+        for row in rows:
             var_type = row.Kansverdeling.lower().strip()
             var_name = row.Index
             waarde = ProbInput._convert_str_to_num(row.Waarde)
             if var_name == "h":
                 # Add characteristic waterlevel and make list of waterlevels.
-                charvals[var_name] = waarde
+                charvals[var_name] = float(waarde)
                 rmin, rmax, rstep = float(row.Min), float(row.Max), float(row.Step)
                 hsteps = int((rmax - rmin) / rstep) + 1
                 hlist = np.linspace(rmin, rmax, hsteps).tolist()
@@ -114,8 +121,7 @@ class ProbInput:
                     ProbInput.validate_stdev(
                         var_name, row.Mean, row.Spreiding, row.Spreidingstype, row.StDev
                     )
-                # Save stochast information
-                dist_params[var_name] = (
+                stochasts[var_name] = ProbInput.create_stochast(
                     row.Kansverdeling,
                     row.Mean,
                     row.StDev,
@@ -123,17 +129,11 @@ class ProbInput:
                     row.Afknot_links,
                     row.Afknot_rechts,
                 )
-                charvals[var_name] = waarde
+                charvals[var_name] = float(waarde)
 
         # Add water level if it wasn't present in the dataframe.
         if "h" not in charvals:
             charvals["h"] = np.nan
-
-        # Save information as dictionaries
-        params = {k: v for k, v in params.items()}
-        stochasts = {k: ProbInput.create_stochast(*v) for k, v in dist_params.items()}
-        charvals = {k: v for k, v in charvals.items()}
-        calc_options = {k: v for k, v in calc_options.items()}
 
         return cls(params, stochasts, charvals, calc_options, hlist)
 
@@ -241,7 +241,7 @@ class ProbInput:
             raise ValueError(f"Onbekende verdeling {dist_type}")
 
         if not np.isnan(afknot_l) and not np.isnan(afknot_r):
-            dist = ot.TruncatedDistribution(dist, afknot_l, afknot_l)
+            dist = ot.TruncatedDistribution(dist, afknot_l, afknot_r)
         elif not np.isnan(afknot_l):
             dist = ot.TruncatedDistribution(
                 dist, afknot_l, ot.TruncatedDistribution.LOWER
@@ -262,7 +262,7 @@ class ProbResult:
     Attributes
     h : float or None
         Water level.
-    prob_cond : float
+    prob_cond : float or None
         Conditional probability of failure.
     converged : bool
         Indicates whether the analysis has converged.
@@ -278,10 +278,28 @@ class ProbResult:
         Number of function evaluations.
     mechanism : str or None
         Type of the limit state function.
+    message : str or None
+        Explanation when the analysis needed recovery or found no failures,
+        otherwise None. A FORM result that is recovered from the solver error
+        keeps its values, but is not reliable when converged is False. A
+        constant limit state function can then give a probability of about 0.5
+        with Cobyla. A simulation without failures has prob_cond 0 and converged
+        False, and z_val, physical_design, standard_design and importancefactors
+        are None. A simulation in which every sample fails has prob_cond 1 and
+        the same None fields, because there is no design point.
+
+    Notes
+    -----
+    A simulation result follows the FORM convention: the importance factors are
+    -u*/beta and the design point lies on the limit state. The direction is
+    taken from the mean of the failure domain. Above a failure probability of
+    0.5 this mean approaches the distribution mean as the probability nears 1,
+    so the direction becomes mostly noise and strong variables can differ from
+    FORM.
     """
 
     h: float | None = None
-    prob_cond: float = None
+    prob_cond: float | None = None
     converged: bool = False
     z_val: float | None = None
     physical_design: dict[str, float] | None = None
@@ -289,6 +307,7 @@ class ProbResult:
     importancefactors: dict[str, float] | None = None
     functionevals: int = 0
     mechanism: str | None = None
+    message: str | None = None
 
     @classmethod
     @validate_call(config=dict(arbitrary_types_allowed=True))
@@ -320,7 +339,8 @@ class ProbResult:
         beta = result.getHasoferReliabilityIndex()
         up = {k: p for k, p in zip(description, result.getStandardSpaceDesignPoint())}
         pp = {k: p for k, p in zip(description, result.getPhysicalSpaceDesignPoint())}
-        alphas = {k: -p / beta for k, p in up.items()}
+        # Bij beta 0 (ontwerppunt op het gemiddelde) zijn er geen alfa's
+        alphas = {k: -p / beta for k, p in up.items()} if beta != 0 else None
 
         # Op basis van de volgende pull request:
         #  - https://github.com/openturns/openturns/pull/2561
@@ -380,23 +400,49 @@ class ProbResult:
         """
         description = list(otzfunc.getInputDescription())
         pf = result.getProbabilityEstimate()
-        beta = ot.Normal().computeInverseSurvivalFunction(pf)[0]
+        if pf == 0:
+            # Zonder falende samples is er geen ontwerppunt te bepalen
+            return cls(
+                h=h,
+                prob_cond=0.0,
+                converged=False,
+                functionevals=otzfunc.getEvaluationCallsNumber(),
+                mechanism=z_type,
+                message="Geen falende samples gevonden",
+            )
         converged = (
             result.getCoefficientOfVariation()
             <= algo.getMaximumCoefficientOfVariation()
         )
+        if pf == 1:
+            # Als alle samples falen is beta afgekapt en zegt het ontwerppunt niets
+            return cls(
+                h=h,
+                prob_cond=1.0,
+                converged=converged,
+                functionevals=otzfunc.getEvaluationCallsNumber(),
+                mechanism=z_type,
+                message="Alle samples falen, geen ontwerppunt te bepalen",
+            )
+        beta = ot.Normal().computeInverseSurvivalFunction(pf)[0]
         sens = ot.SimulationSensitivityAnalysis(result)
         mean_uvals = distribution.getIsoProbabilisticTransformation()(
             sens.computeMeanPointInEventDomain()
         )
         mean_uvals = np.array(mean_uvals)
         udist = np.linalg.norm(mean_uvals)
-        alphas = mean_uvals / udist
-        alphas = {k: a for k, a in zip(description, alphas)}
-        up = [-a * beta for a in alphas.values()]
-        pp = distribution.getInverseIsoProbabilisticTransformation()(up)
-        up = {k: p for k, p in zip(description, up)}
-        pp = {k: p for k, p in zip(description, pp)}
+        direction = mean_uvals / udist
+        # Net als bij FORM: alfa = -u*/beta, het ontwerppunt ligt op beta * richting
+        # Bij beta 0 (pf exact 0.5) zijn er geen alfa's
+        alphas = (
+            {k: a for k, a in zip(description, -np.sign(beta) * direction)}
+            if beta != 0
+            else None
+        )
+        u_point = list(direction * beta)
+        p_point = distribution.getInverseIsoProbabilisticTransformation()(u_point)
+        up = {k: p for k, p in zip(description, u_point)}
+        pp = {k: p for k, p in zip(description, p_point)}
 
         return cls(
             h,

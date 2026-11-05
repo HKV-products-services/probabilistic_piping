@@ -1,0 +1,113 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "src/probabilistic_piping/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/probabilistic_piping"]
+
+# Only the package goes in the sdist, not the other folders in the repo root
+[tool.hatch.build.targets.sdist]
+include = ["src/probabilistic_piping", "src/README.md", "LICENSE"]
+
+[project]
+name = "probabilistic_piping"
+dynamic = ["version"]
+description = "Python package for probabilistic piping calculations"
+requires-python = ">=3.11"
+readme = "src/README.md"
+license = "GPL-3.0-only"
+authors = [
+  { name = "Guy Dupuits"},
+  { name = "Robin Nicolai"},
+  { name = "Joost Pol"},
+  { name = "David Haasnoot"},
+]
+
+dependencies = [
+  "numpy",
+  "numba>=0.68",
+  "pandas",
+  "openturns>=1.27",
+  "pydantic",
+  "tqdm",
+]
+
+[project.urls]
+Documentation = "https://hkv-products-services.github.io/probabilistic_piping"
+Source = "https://github.com/HKV-products-services/probabilistic_piping"
+
+[dependency-groups]
+dev = [
+  "ipykernel",
+  "ipywidgets",
+  "matplotlib",
+  "nbclient",
+  "nbformat",
+  "nbstripout>=0.8.1",
+  "openpyxl>=3.1.5",
+  "pre-commit>=4.4",
+  "pre-commit-hooks>=5.0.0",
+  "pytest",
+  "pytest-cov",
+  "quartodoc>=0.9.1",
+  "griffe<2",
+  "ruff>=0.8.1",
+  "mypy>=1.13",
+  "pandas-stubs>=3.1.0.261029,<4",
+]
+
+[tool.ruff.lint]
+# Keep the existing Ruff/pre-commit checks explicit across tool upgrades.
+select = ["E4", "E7", "E9", "F"]
+
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = [
+  "win-64",
+  "linux-64",
+  # Match the OpenTURNS PyPI wheel's minimum supported macOS version.
+  { platform = "osx-arm64", macos = "14.0" },
+]
+
+[tool.pixi.tasks]
+# Installation
+install = "pre-commit install"
+
+# Docs
+quartodoc-build = { cmd = "quartodoc build && rm objects.json", cwd = "docs" ,inputs = [
+    "docs/_quarto.yml",
+    "src/probabilistic_piping",
+    ],outputs = [
+    "docs/reference/"
+    ]}
+quarto-preview = { cmd = "export QUARTO_PYTHON=python && quarto preview docs", depends-on = [
+    "quartodoc-build",
+] }
+quarto-check = { cmd = "quarto check all", depends-on = ["quartodoc-build"] }
+quarto-render = { cmd = "export QUARTO_PYTHON=python && quarto render docs --to html --execute", depends-on = [
+    "quartodoc-build",
+] }
+docs = { depends-on = ["quarto-preview"] }
+pre-commit = "pre-commit run --all-files"
+
+# Test
+#pytest-cov = "pytest --cov --cov-report html:test/test_cov"
+pytest-cov = "pytest --cov"
+
+[tool.pixi.dependencies]
+quarto = ">=1.5.57"
+
+[tool.pixi.pypi-dependencies]
+probabilistic_piping = { path = ".", editable = true }
+
+[tool.pixi.environments]
+default = { features = ["dev"] }
+
+[tool.mypy]
+files = ["src"]
+python_version = "3.11"
+# openturns, numba and tqdm ship without type information.
+ignore_missing_imports = true

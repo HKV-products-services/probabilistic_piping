@@ -1,7 +1,13 @@
-from typing import Self
+from collections.abc import Mapping
+from dataclasses import field
 
 import numpy as np
 from pydantic.dataclasses import dataclass
+
+from probabilistic_piping.piping_equations import PipingEquations
+
+# Stijghoogte methodes die beschikbaar zijn
+METHODES_STIJGHOOGTE = ("responsfactor", "responsfactor_phi_gem", "TRWD_4A")
 
 
 @dataclass(config={"arbitrary_types_allowed": True})
@@ -26,21 +32,19 @@ class PipingSettings:
     D_al : float or np.ndarray
         Dikte deklaag achterland [m].
     k : float or np.ndarray
-        Doorlatendheid deklaag [m/s].
+        Doorlatendheid watervoerende laag [m/s].
     k_vl : float or np.ndarray
         Doorlatendheid voorland [m/s].
     k_al : float or np.ndarray
         Doorlatendheid achterland [m/s].
-    cv_vl : float or np.ndarray
-        consolidatiecoëfficiënt klei voorland [m^2/s].
-    cv_al : float or np.ndarray
-        consolidatiecoëfficiënt klei achterland [m^2/s].
     b : float or np.ndarray
         b-waarde in TRWD model 4D (halve breedte rivierbed) [m]
     n_aq : float or np.ndarray
         Porositeit van de aquifer [-].
     L : float or np.ndarray
         Kwelweglengte [m].
+    L_dijkbasis : float or np.ndarray
+        Lengte dijkbasis, onderdeel van de kwelweg bij TRWD model 4A [m].
     L_vl : float or np.ndarray
         Lengte voorland [m].
     L_al : float or np.ndarray
@@ -76,7 +80,38 @@ class PipingSettings:
     m_p : float or np.ndarray
         Modelfactor piping [-].
     methode_stijghoogte : str
-        Stijghoogte methode, by default "responsfactor"
+        Stijghoogte methode ("responsfactor", "responsfactor_phi_gem" of
+        "TRWD_4A"), by default "responsfactor"
+    phi_gem : float or np.ndarray
+        Gemiddelde stijghoogte bij het uittredepunt, bij "responsfactor_phi_gem" [m+NAP].
+    h_gem : float or np.ndarray
+        Gemiddelde buitenwaterstand, bij "responsfactor_phi_gem" [m+NAP].
+    dldt_modeltype : str or None
+        Model voor de pipegroeisnelheid ("constant", "Pol2019" of "Pol2022"),
+        verplicht voor timedep berekeningen, by default None. Geldt voor alle
+        samples. Referenties: zie `pipe_growth`.
+    dldt_constant : float or np.ndarray
+        Constante pipegroeisnelheid, bij "constant" [m/s].
+    dldt_Ce : float or np.ndarray
+        Groeicoefficient, bij "Pol2022" [-]. Referenties: zie
+        `pipe_growth`.
+    dldt_kezdi_C : float or np.ndarray
+        Constante C in de formule van Kezdi, bij "Pol2019" [-].
+    dldt_kezdi_mv : float or np.ndarray
+        Constante mv in de formule van Kezdi, bij "Pol2019" [-].
+    l_ini : float or np.ndarray
+        Beginlengte van de pipe als fractie van de kwelweglengte L [-].
+    detect_true : bool
+        Of een pipe wordt opgemerkt en er dus een interventie volgt, by default
+        False. Geldt voor alle samples.
+    intervention_hours : float or np.ndarray
+        Aantal uren tussen het begin van het uitspoelen en de interventie [uur].
+    timegrid : np.ndarray
+        Tijdstippen van de waterstandsreeks [uur], vorm n x 1. Een reeks voor
+        alle samples. Leeg (vorm 0 x 1) zolang er geen reeks is gezet.
+    h_timeseries : np.ndarray
+        Buitenwaterstand op de tijdstippen van timegrid [m+NAP], vorm n x 1.
+        Leeg (vorm 0 x 1) zolang er geen reeks is gezet.
     """
 
     t_norm: float | np.ndarray = np.nan
@@ -89,11 +124,10 @@ class PipingSettings:
     k: float | np.ndarray = np.nan
     k_vl: float | np.ndarray = np.nan
     k_al: float | np.ndarray = np.nan
-    cv_vl: float | np.ndarray = np.nan
-    cv_al: float | np.ndarray = np.nan
     b: float | np.ndarray = np.nan
     n_aq: float | np.ndarray = np.nan
     L: float | np.ndarray = np.nan
+    L_dijkbasis: float | np.ndarray = np.nan
     L_vl: float | np.ndarray = np.nan
     L_al: float | np.ndarray = np.nan
     gamma_sat: float | np.ndarray = np.nan
@@ -112,13 +146,34 @@ class PipingSettings:
     krit_verval_factor: float | np.ndarray = 1.0
     m_p: float | np.ndarray = np.nan
     methode_stijghoogte: str = "responsfactor"
+    phi_gem: float | np.ndarray = np.nan
+    h_gem: float | np.ndarray = np.nan
+    dldt_modeltype: str | None = None
+    dldt_constant: float | np.ndarray = np.nan
+    dldt_Ce: float | np.ndarray = np.nan
+    dldt_kezdi_C: float | np.ndarray = np.nan
+    dldt_kezdi_mv: float | np.ndarray = np.nan
+    l_ini: float | np.ndarray = np.nan
+    detect_true: bool = False
+    intervention_hours: float | np.ndarray = np.nan
+    timegrid: np.ndarray = field(default_factory=lambda: np.empty((0, 1)))
+    h_timeseries: np.ndarray = field(default_factory=lambda: np.empty((0, 1)))
 
     def __post_init__(self) -> None:
         """
         Post-initialization to set up attributes and their dimensions.
         """
+        self._check_methode_stijghoogte(self.methode_stijghoogte)
+
         # Determine attributes which need to be checked, store info in a dict
-        ignore = ["methode_stijghoogte"]
+        # Instellingen die niet per sample worden uitgebreid
+        ignore = [
+            "methode_stijghoogte",
+            "dldt_modeltype",
+            "detect_true",
+            "timegrid",
+            "h_timeseries",
+        ]
         attrs = []
         for a in dir(self):
             if (
@@ -136,9 +191,31 @@ class PipingSettings:
 
         self.__ignore = ignore
 
+    @staticmethod
+    def _check_methode_stijghoogte(methode: object) -> None:
+        """
+        Controleer of de stijghoogte methode beschikbaar is.
+
+        Raises
+        ------
+        NotImplementedError
+            Als de methode "superpositie_barends" is, die nog niet beschikbaar is.
+        ValueError
+            Als de methode onbekend is.
+        """
+        if methode == "superpositie_barends":
+            raise NotImplementedError(
+                "methode_stijghoogte 'superpositie_barends' is nog niet beschikbaar"
+            )
+        if methode not in METHODES_STIJGHOOGTE:
+            raise ValueError(
+                f"methode_stijghoogte {methode!r} is onbekend, kies uit "
+                f"{', '.join(METHODES_STIJGHOOGTE)}"
+            )
+
     def set_params_fromdict(
         self,
-        piping_dict: dict[str, float | int | str | np.ndarray],
+        piping_dict: Mapping[str, object],
         verify_integrity: bool = True,
     ) -> None:
         """
@@ -160,7 +237,7 @@ class PipingSettings:
     def set_param(
         self,
         attr: str,
-        val: float | int | str | np.ndarray,
+        val: object,
         verify_integrity: bool = True,
     ) -> None:
         """
@@ -178,8 +255,12 @@ class PipingSettings:
         Raises
         ------
         ValueError
-            If the attribute name is unknown.
+            If the attribute name is unknown, or methode_stijghoogte is unknown.
+        NotImplementedError
+            If methode_stijghoogte is "superpositie_barends".
         """
+        if attr == "methode_stijghoogte":
+            self._check_methode_stijghoogte(val)
         if hasattr(self, attr):
             ndim = np.ndim(val)
             if attr not in self.__ignore:
@@ -229,7 +310,7 @@ class PipingSettings:
                 # Check that the number of elements is equal to max_val
                 assert len(val) == max_val
 
-    def copy(self, verify_integrity: bool = True) -> Self:
+    def copy(self, verify_integrity: bool = True) -> "PipingSettings":
         """
         Create a copy of the current PipingSettings object.
 
@@ -249,7 +330,8 @@ class PipingSettings:
         # Copy ignored settings
         settings_dict = {}
         for attr in self.__ignore:
-            settings_dict[attr] = getattr(self, attr)
+            val = getattr(self, attr)
+            settings_dict[attr] = val.copy() if isinstance(val, np.ndarray) else val
 
         # Copy all other settings
         for attr, (val, ndim) in self.__attrs.items():
@@ -263,7 +345,9 @@ class PipingSettings:
 
         return ps
 
-    def get_partial_settings(self, i: int, verify_integrity: bool = True) -> Self:
+    def get_partial_settings(
+        self, i: int, verify_integrity: bool = True
+    ) -> "PipingSettings":
         """
         Get a partial settings object for the i-th slice.
 
@@ -285,7 +369,8 @@ class PipingSettings:
         # Copy ignored settings
         settings_dict = {}
         for attr in self.__ignore:
-            settings_dict[attr] = getattr(self, attr)
+            val = getattr(self, attr)
+            settings_dict[attr] = val.copy() if isinstance(val, np.ndarray) else val
 
         # Copy i-th slice for all other settings
         for attr, (val, _) in self.__attrs.items():
@@ -308,3 +393,56 @@ class PipingSettings:
         for attr, (val, _) in self.__attrs.items():
             settings[attr] = val
         return settings
+
+    def set_waterstand_tijdreeks(
+        self,
+        tijd: np.ndarray | list[float],
+        waterstand: np.ndarray | list[float],
+        dt: float | None = None,
+    ) -> None:
+        """
+        Zet een waterstandsreeks, gelijk voor alle samples.
+
+        Parameters
+        ----------
+        tijd : np.ndarray or list of float
+            Tijdstippen [uur].
+        waterstand : np.ndarray or list of float
+            Buitenwaterstand op de tijdstippen [m+NAP].
+        dt : float or None, optional
+            Tijdstap [uur] waarmee de reeks wordt geinterpoleerd, by default None
+            (de reeks blijft zoals opgegeven). De reeks eindigt exact op het
+            laatste opgegeven tijdstip. Past dt niet een geheel aantal keren in de
+            reeks, dan is de laatste stap korter.
+
+        Raises
+        ------
+        ValueError
+            Als tijd en waterstand niet even lang zijn, als er minder dan 2
+            punten zijn, als de tijdstippen niet strikt stijgen of als dt niet
+            positief is.
+        """
+        tijd = np.asarray(tijd, dtype=np.float64).reshape(-1, 1)
+        waterstand = np.asarray(waterstand, dtype=np.float64).reshape(-1, 1)
+        if tijd.shape != waterstand.shape:
+            raise ValueError("Tijd en waterstand arrays zijn niet even lang")
+        if len(tijd) < 2:
+            raise ValueError("Een waterstandsreeks heeft minimaal 2 punten nodig")
+        if not np.all(np.diff(tijd[:, 0]) > 0):
+            raise ValueError("Tijdstippen moeten strikt stijgend zijn")
+        if dt is not None and not dt > 0:
+            raise ValueError("dt moet groter dan 0 zijn")
+
+        if dt is not None:
+            # Het rooster stopt exact op het laatste tijdstip, zonder extrapolatie.
+            # Een punt dat door afronding vlak bij het einde valt vervalt.
+            t_end = tijd[-1, 0]
+            t_new = np.arange(tijd[0, 0], t_end, dt)
+            t_new = np.append(t_new[t_end - t_new > 1e-9 * dt], t_end)
+            waterstand = PipingEquations.inextrp1d(
+                t_new, tijd[:, 0], waterstand[:, 0]
+            ).reshape(-1, 1)
+            tijd = t_new.reshape(-1, 1)
+
+        self.set_param("timegrid", tijd, verify_integrity=False)
+        self.set_param("h_timeseries", waterstand, verify_integrity=False)

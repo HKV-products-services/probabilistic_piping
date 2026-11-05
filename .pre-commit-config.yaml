@@ -1,24 +1,69 @@
+# Hook tools are installed and versioned by Pixi. Avoid nested Python
+# environments, which cannot find the conda interpreter's DLLs on Windows.
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+  - repo: local
     hooks:
       - id: check-added-large-files
+        name: check for added large files
+        entry: pixi run --locked check-added-large-files
+        language: unsupported
+        stages: [pre-commit, pre-push, manual]
       - id: check-ast
+        name: check python ast
+        entry: pixi run --locked check-ast
+        language: unsupported
+        types: [python]
       - id: check-case-conflict
+        name: check for case conflicts
+        entry: pixi run --locked check-case-conflict
+        language: unsupported
       - id: check-merge-conflict
+        name: check for merge conflicts
+        entry: pixi run --locked check-merge-conflict
+        language: unsupported
+        types: [text]
       - id: debug-statements
+        name: debug statements (python)
+        entry: pixi run --locked debug-statement-hook
+        language: unsupported
+        types: [python]
       - id: end-of-file-fixer
+        name: fix end of files
+        entry: pixi run --locked end-of-file-fixer
+        language: unsupported
+        types: [text]
+        stages: [pre-commit, pre-push, manual]
       - id: trailing-whitespace
+        name: trim trailing whitespace
+        entry: pixi run --locked trailing-whitespace-fixer
+        language: unsupported
+        types: [text]
+        stages: [pre-commit, pre-push, manual]
         args: [--markdown-linebreak-ext=md]
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.1
-    hooks:
       - id: ruff
+        name: ruff
+        entry: pixi run --locked ruff check --force-exclude
+        language: unsupported
         types_or: [python, pyi, jupyter]
         args: [--fix, --exit-non-zero-on-fix]
+        require_serial: true
       - id: ruff-format
+        name: ruff-format
+        entry: pixi run --locked ruff format --force-exclude
+        language: unsupported
         types_or: [python, pyi, jupyter]
-  - repo: https://github.com/kynan/nbstripout
-    rev: 0.8.1
-    hooks:
-    - id: nbstripout
+        require_serial: true
+      # Type-checks the whole package (config in pyproject.toml), because a
+      # change in one module can break the types of another.
+      - id: mypy
+        name: mypy
+        entry: pixi run --locked mypy
+        language: unsupported
+        files: ^src/.*\.py$
+        pass_filenames: false
+        require_serial: true
+      - id: nbstripout
+        name: nbstripout
+        entry: pixi run --locked nbstripout
+        language: unsupported
+        types: [jupyter]

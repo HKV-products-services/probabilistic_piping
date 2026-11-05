@@ -20,7 +20,7 @@ jobs:
 
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
-          manifest-path: pixi.toml
+          manifest-path: pyproject.toml
           pixi-version: "latest"
 
       - name: Run Pytests
